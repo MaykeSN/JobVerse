@@ -1,6 +1,15 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+function uuidv4(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  return [...bytes]
+    .map((b, i) => ([4, 6, 8, 10].includes(i) ? '-' : '') + b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
 interface DadosCV {
   skills: string[];
   sobre: string;
@@ -36,7 +45,7 @@ export const useCandidato = create<CandidatoState>()(
       candidaturas: [],
       definir: ({ nome, email }) =>
         set({
-          id: crypto.randomUUID(),
+          id: uuidv4(),
           nome,
           email,
           // Preserva CV anterior caso o usuário só tenha mudado o nome.

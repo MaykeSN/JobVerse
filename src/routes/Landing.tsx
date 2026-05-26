@@ -5,6 +5,7 @@ import { ArrowRight, Sparkles } from 'lucide-react';
 import ParticulasBg from '../shared/ParticulasBg';
 import { useCandidato } from '../shared/candidato';
 import SeletorQualidade from '../components/SeletorQualidade';
+import * as db from '../shared/db';
 
 export default function Landing() {
   const navigate = useNavigate();
@@ -16,6 +17,8 @@ export default function Landing() {
     e.preventDefault();
     if (!nome.trim()) return;
     definir({ nome: nome.trim(), email: email.trim() || undefined });
+    const { id } = useCandidato.getState();
+    if (id) db.syncCandidato(id, nome.trim(), email.trim() || undefined);
     navigate('/feira');
   };
 

@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Vector3 } from 'three';
 import { useCandidato } from '../shared/candidato';
+import * as db from '../shared/db';
 
 interface Props {
   posicao: [number, number, number];
@@ -29,6 +30,7 @@ export default function DwellTracker({
   onDentroChange
 }: Props) {
   const registrarVisita = useCandidato((s) => s.registrarVisita);
+  const candidatoId = useCandidato((s) => s.id);
   const entradaRef = useRef<number | null>(null);
   const dentroRef = useRef(false);
   const alvoVec = useRef(new Vector3(posicao[0], 0, posicao[2]));
@@ -57,6 +59,7 @@ export default function DwellTracker({
         const tempo = clock.elapsedTime - entrada;
         if (tempo >= tempoMinimo) {
           registrarVisita(companySlug);
+          if (candidatoId) db.syncVisita(candidatoId, companySlug, Math.round(tempo));
         }
       }
       force((n) => n + 1);
