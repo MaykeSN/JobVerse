@@ -5,6 +5,7 @@ import { Vector3, type Mesh, type MeshBasicMaterial } from 'three';
 import type { Empresa } from '../shared/tipos';
 import { usePreset } from '../shared/graficos';
 import { useUI } from '../shared/ui';
+import { tocarClick } from '../shared/audio';
 import DwellTracker from './DwellTracker';
 
 interface EstandeProps {
@@ -44,6 +45,7 @@ export default function Estande({ empresa }: EstandeProps) {
 
   const handleClick = (e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation();
+    tocarClick();
     abrirEmpresa(empresa);
   };
 

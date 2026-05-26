@@ -492,14 +492,16 @@ Cada empresa precisa:
 - [ ] Edge Function `ai-summary` stub deployada *(manual — quando Supabase aplicado)*
 
 ### Fase 6 — Polimento visual
-- [ ] Substituir primitivos por GLTF (Quaternius / Kenney / Poly Pizza)
-- [ ] Áudio ambiente lo-fi + sfx click
-- [ ] Vídeos curtos das empresas em planes na cena
-- [ ] Glitch effect ocasional no logo (postprocessing)
-- [ ] Easter egg (1–2)
-- [ ] Loading screen com progress bar custom
-- [ ] Teste cross-browser (Chrome, Firefox, Edge)
-- [ ] FPS check (alvo: 60fps em laptop médio)
+- [ ] Substituir primitivos por GLTF (Quaternius / Kenney / Poly Pizza) *(pulado — estandes atuais já bonitos, risco alto)*
+- [x] Áudio ambiente sintetizado (Web Audio drone 3 osciladores + LFO) — `src/shared/audio.ts`
+- [x] SFX click (square 880Hz) + sucesso (triangle 880→1320Hz) + rave (arpejo C-E-G-C5)
+- [x] `<ToggleAudio />` no canto pra ligar/desligar (persistido)
+- [ ] Vídeos curtos das empresas em planes na cena *(pulado — sem assets reais)*
+- [x] Glitch animation aplicada no logo JOBVERSE (Landing + LoadingScreen)
+- [x] Easter egg: Konami code (↑↑↓↓←→←→BA) ativa **rave mode** 10s — bloom 2x, sparkles 1.5x cor magenta, screen strobe radial + badge animado + sfx arpejo
+- [x] Loading screen com progress bar customizada (gradient cyan→magenta) usando `useProgress` do drei + logo glitch
+- [ ] Teste cross-browser (Chrome, Firefox, Edge) *(manual)*
+- [ ] FPS check (alvo: 60fps em laptop médio) *(manual)*
 
 ### Fase 7 — Entrega
 - [ ] README completo (pitch, stack, como rodar, screenshots, declaração IA, créditos, roadmap)

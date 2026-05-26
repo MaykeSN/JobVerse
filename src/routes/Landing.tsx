@@ -5,6 +5,7 @@ import { ArrowRight, Sparkles } from 'lucide-react';
 import ParticulasBg from '../shared/ParticulasBg';
 import { useCandidato } from '../shared/candidato';
 import SeletorQualidade from '../components/SeletorQualidade';
+import ToggleAudio from '../components/ToggleAudio';
 
 export default function Landing() {
   const navigate = useNavigate();
@@ -23,6 +24,7 @@ export default function Landing() {
     <div className="relative min-h-screen flex items-center justify-center overflow-hidden">
       <ParticulasBg />
       <SeletorQualidade posicao="bottom-right" />
+      <ToggleAudio posicao="top-right" />
 
       <motion.div
         initial={{ opacity: 0, y: 24 }}
@@ -42,7 +44,7 @@ export default function Landing() {
           </span>
         </motion.div>
 
-        <h1 className="font-display text-6xl md:text-7xl font-black tracking-tight mb-4">
+        <h1 className="font-display text-6xl md:text-7xl font-black tracking-tight mb-4 animate-glitch">
           <span className="text-glow-cyan">JOB</span>
           <span className="text-neon-magenta text-glow-magenta">VERSE</span>
         </h1>

@@ -6,7 +6,13 @@ import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing';
 import { useCandidato } from '../shared/candidato';
 import { usePreset } from '../shared/graficos';
 import { useUI, useTemOverlayAberto } from '../shared/ui';
+import { useRave, useKonami } from '../shared/easter-eggs';
+import { tocarRave } from '../shared/audio';
 import { MousePointerClick } from 'lucide-react';
+import { useCallback } from 'react';
+import ToggleAudio from '../components/ToggleAudio';
+import RaveOverlay from '../components/RaveOverlay';
+import LoadingScreen from '../components/LoadingScreen';
 import { empresas } from '../feira/empresas';
 import Estande from '../feira/Estande';
 import PlayerControls, { usePointerLockState } from '../feira/PlayerControls';
@@ -109,6 +115,19 @@ export default function Feira() {
     document.body.requestPointerLock();
   };
 
+  // Konami code (↑↑↓↓←→←→BA) → rave mode 10s
+  const rave = useRave((s) => s.ativo);
+  const ativarRave = useRave((s) => s.ativar);
+  const triggerRave = useCallback(() => {
+    ativarRave(10000);
+    tocarRave();
+  }, [ativarRave]);
+  useKonami(triggerRave);
+
+  // Amplificadores durante o rave
+  const sparklesCount = Math.round(preset.sparklesAmbiente * (rave ? 1.5 : 1));
+  const bloomIntensity = preset.bloomIntensity * (rave ? 2 : 1);
+
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-bg-deep">
       {/* HUD */}
@@ -142,6 +161,7 @@ export default function Feira() {
 
       {/* Seletor de qualidade gráfica — sempre visível, fora do gate */}
       <SeletorQualidade posicao="bottom-left" />
+      <ToggleAudio posicao="bottom-right" />
 
       {/* Crosshair sutil quando em FPS (e sem overlay) */}
       {locked && !temOverlay && (
@@ -198,14 +218,14 @@ export default function Feira() {
           {empresas.map((e) => (
             <Estande key={e.slug} empresa={e} />
           ))}
-          {/* Sparkles ambiente — quantidade depende da qualidade */}
+          {/* Sparkles ambiente — quantidade depende da qualidade (1.5x no rave) */}
           <Sparkles
-            count={preset.sparklesAmbiente}
+            count={sparklesCount}
             scale={[40, 8, 40]}
             position={[0, 4, 0]}
             size={2}
-            speed={0.2}
-            color="#00D4FF"
+            speed={rave ? 0.6 : 0.2}
+            color={rave ? '#FF4B91' : '#00D4FF'}
           />
           <Environment preset="night" />
         </Suspense>
@@ -215,7 +235,7 @@ export default function Feira() {
         {preset.bloom && (
           <EffectComposer>
             <Bloom
-              intensity={preset.bloomIntensity}
+              intensity={bloomIntensity}
               luminanceThreshold={0.25}
               luminanceSmoothing={0.9}
               mipmapBlur
@@ -229,10 +249,12 @@ export default function Feira() {
         )}
       </Canvas>
 
-      {/* Overlays HTML — modais + toast */}
+      {/* Overlays HTML — modais + toast + rave + loading */}
       <ModalVagas empresa={empresaAberta} onFechar={fecharEmpresa} />
       <ModalCV vaga={vagaSelecionada} empresa={empresaAberta} onFechar={fecharCV} />
       <Toast />
+      <RaveOverlay />
+      <LoadingScreen />
     </div>
   );
 }
