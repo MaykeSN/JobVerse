@@ -463,13 +463,17 @@ Cada empresa precisa:
 ### Fase 4 — Estandes funcionais
 - [x] `<Estande />` com base reflexiva + pilares portal + backdrop + painel de texto 3D (nome, missão, stack)
 - [x] `<Float>` no painel flutuante
-- [x] HUD com nome + contadores reativos (zustand) — base já existe
-- [ ] Totem/portal clicável (onClick em mesh do estande)
-- [ ] DwellTracker registrando visitas no Supabase
-- [ ] Modal de vagas com framer-motion entrance
-- [ ] Modal de CV com form completo (skills, sobre, github)
-- [ ] INSERT em `applications` + toast de confirmação
-- [ ] Atualizar contadores ao candidatar
+- [x] HUD com nome + contadores reativos (zustand)
+- [x] Totem/portal clicável (onClick em base/anel/pilares/backdrop com stopPropagation + cursor pointer)
+- [x] DwellTracker registrando visitas em zustand local (raio 4m, tempo mínimo 2s, anel pulsa quando dentro)
+- [x] Modal de vagas com framer-motion (cards por vaga, badge senioridade, requisitos, botão Candidatar)
+- [x] Modal de CV com form completo (chips de skills, sobre com contador 280, github URL)
+- [x] Submit → salvarCV + registrarCandidatura + toast verde + fecha modal
+- [x] Toast reusável (sucesso/info/erro, gradient cyberpunk, auto-some 3.5s)
+- [x] Modais empilháveis (CV sobre Vagas) — após enviar, vaga vira "Candidatado ✓"
+- [x] Pointer lock auto-libera quando modal abre
+- [x] Mock `src/feira/vagas.ts` com 12 vagas alinhadas com seed.sql (substituir por fetch quando Supabase aplicado)
+- [ ] Swap mock → Supabase (quando schema/seed aplicados no projeto Supabase real)
 
 ### Fase 5 — Painel recrutador
 - [ ] Rota /recrutador/:slug lendo param

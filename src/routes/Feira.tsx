@@ -1,14 +1,18 @@
-import { Suspense } from 'react';
+import { Suspense, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Canvas } from '@react-three/fiber';
 import { Line, MeshReflectorMaterial, Sparkles, Environment } from '@react-three/drei';
 import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing';
 import { useCandidato } from '../shared/candidato';
 import { usePreset } from '../shared/graficos';
+import { useUI, useTemOverlayAberto } from '../shared/ui';
 import { empresas } from '../feira/empresas';
 import Estande from '../feira/Estande';
 import PlayerControls, { usePointerLockState } from '../feira/PlayerControls';
 import SeletorQualidade from '../components/SeletorQualidade';
+import ModalVagas from '../components/ModalVagas';
+import ModalCV from '../components/ModalCV';
+import Toast from '../components/Toast';
 
 function Piso() {
   const preset = usePreset();
@@ -79,6 +83,19 @@ export default function Feira() {
   const locked = usePointerLockState();
   const preset = usePreset();
 
+  const empresaAberta = useUI((s) => s.empresaAberta);
+  const vagaSelecionada = useUI((s) => s.vagaSelecionada);
+  const fecharEmpresa = useUI((s) => s.fecharEmpresa);
+  const fecharCV = useUI((s) => s.fecharCV);
+  const temOverlay = useTemOverlayAberto();
+
+  // Quando um modal abre, libera o pointer lock pra não conflitar com o mouse no DOM
+  useEffect(() => {
+    if (temOverlay && document.pointerLockElement) {
+      document.exitPointerLock();
+    }
+  }, [temOverlay]);
+
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-bg-deep">
       {/* HUD */}
@@ -106,22 +123,22 @@ export default function Feira() {
 
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
         <p className="text-[10px] uppercase tracking-[0.3em] text-text-muted">
-          WASD + mouse · Shift pra correr · ESC pra sair
+          WASD + mouse · Shift pra correr · Clique num estande pra ver vagas · ESC pra sair
         </p>
       </div>
 
       {/* Seletor de qualidade gráfica — sempre visível, fora do gate */}
       <SeletorQualidade posicao="bottom-left" />
 
-      {/* Crosshair sutil quando em FPS */}
-      {locked && (
+      {/* Crosshair sutil quando em FPS (e sem overlay) */}
+      {locked && !temOverlay && (
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none">
           <div className="w-1.5 h-1.5 rounded-full bg-neon-cyan/80 shadow-[0_0_8px_#00D4FF]" />
         </div>
       )}
 
-      {/* Gate de entrada — overlay HTML enquanto pointer não-locked */}
-      {!locked && (
+      {/* Gate de entrada — overlay HTML enquanto pointer não-locked E sem modal aberto */}
+      {!locked && !temOverlay && (
         <div className="absolute inset-0 z-20 flex items-center justify-center bg-bg-deep/70 backdrop-blur-sm">
           <div className="text-center px-8 py-6 border border-neon-cyan/30 rounded-xl bg-bg-panel/70 shadow-[0_0_40px_rgba(0,212,255,0.25)]">
             <p className="text-[10px] uppercase tracking-[0.4em] text-text-dim">JobVerse</p>
@@ -178,6 +195,11 @@ export default function Feira() {
           </EffectComposer>
         )}
       </Canvas>
+
+      {/* Overlays HTML — modais + toast */}
+      <ModalVagas empresa={empresaAberta} onFechar={fecharEmpresa} />
+      <ModalCV vaga={vagaSelecionada} empresa={empresaAberta} onFechar={fecharCV} />
+      <Toast />
     </div>
   );
 }

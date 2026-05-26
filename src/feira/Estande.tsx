@@ -1,8 +1,11 @@
-import { useMemo } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Float, Sparkles, Text } from '@react-three/drei';
-import { Vector3 } from 'three';
+import { useFrame, type ThreeEvent } from '@react-three/fiber';
+import { Vector3, type Mesh, type MeshBasicMaterial } from 'three';
 import type { Empresa } from '../shared/tipos';
 import { usePreset } from '../shared/graficos';
+import { useUI } from '../shared/ui';
+import DwellTracker from './DwellTracker';
 
 interface EstandeProps {
   empresa: Empresa;
@@ -13,6 +16,10 @@ const SPAWN = new Vector3(0, 0, 0);
 export default function Estande({ empresa }: EstandeProps) {
   const { posicao, cor, nome, missao, stack } = empresa;
   const preset = usePreset();
+  const abrirEmpresa = useUI((s) => s.abrirEmpresa);
+
+  const [dentro, setDentro] = useState(false);
+  const anelRef = useRef<Mesh>(null);
 
   // Estande olha pra praça central — calculamos yaw uma vez
   const yaw = useMemo(() => {
@@ -23,30 +30,62 @@ export default function Estande({ empresa }: EstandeProps) {
 
   const tags = stack.slice(0, 4);
 
+  // Pulsa o anel quando o player está dentro (feedback visual do dwell)
+  useFrame(({ clock }) => {
+    if (!anelRef.current) return;
+    const material = anelRef.current.material as MeshBasicMaterial;
+    if (dentro) {
+      const t = clock.elapsedTime;
+      material.opacity = 0.6 + Math.sin(t * 4) * 0.4;
+    } else {
+      material.opacity = 1;
+    }
+  });
+
+  const handleClick = (e: ThreeEvent<MouseEvent>) => {
+    e.stopPropagation();
+    abrirEmpresa(empresa);
+  };
+
   return (
     <group position={posicao} rotation={[0, yaw, 0]}>
-      {/* Base circular reflexiva — usamos meshStandardMaterial com metalness alto
-          em vez de MeshReflectorMaterial pra economizar fillrate (5 estandes). */}
-      <mesh position={[0, 0.05, 0]} receiveShadow>
+      {/* Base circular reflexiva — também é o hitbox de click do estande */}
+      <mesh
+        position={[0, 0.05, 0]}
+        receiveShadow
+        onClick={handleClick}
+        onPointerOver={(e) => {
+          e.stopPropagation();
+          document.body.style.cursor = 'pointer';
+        }}
+        onPointerOut={() => {
+          document.body.style.cursor = '';
+        }}
+      >
         <cylinderGeometry args={[2, 2, 0.1, 48]} />
         <meshStandardMaterial
           color="#0B0D1A"
           emissive={cor}
-          emissiveIntensity={0.25}
+          emissiveIntensity={dentro ? 0.5 : 0.25}
           metalness={0.9}
           roughness={0.2}
         />
       </mesh>
 
-      {/* Anel de luz no chão */}
-      <mesh position={[0, 0.11, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+      {/* Anel de luz no chão (pulsa quando dentro) */}
+      <mesh
+        ref={anelRef}
+        position={[0, 0.11, 0]}
+        rotation={[-Math.PI / 2, 0, 0]}
+        onClick={handleClick}
+      >
         <ringGeometry args={[1.9, 2.05, 64]} />
-        <meshBasicMaterial color={cor} />
+        <meshBasicMaterial color={cor} transparent />
       </mesh>
 
       {/* Pilares laterais — vibe portal */}
       {[-1.7, 1.7].map((x) => (
-        <mesh key={x} position={[x, 1.8, 0]} castShadow>
+        <mesh key={x} position={[x, 1.8, 0]} castShadow onClick={handleClick}>
           <boxGeometry args={[0.18, 3.6, 0.18]} />
           <meshStandardMaterial
             color={cor}
@@ -58,7 +97,7 @@ export default function Estande({ empresa }: EstandeProps) {
       ))}
 
       {/* Travessa superior conectando os pilares */}
-      <mesh position={[0, 3.55, 0]}>
+      <mesh position={[0, 3.55, 0]} onClick={handleClick}>
         <boxGeometry args={[3.6, 0.12, 0.18]} />
         <meshStandardMaterial
           color={cor}
@@ -69,7 +108,7 @@ export default function Estande({ empresa }: EstandeProps) {
       </mesh>
 
       {/* Backdrop atrás do portal */}
-      <mesh position={[0, 2, -0.6]}>
+      <mesh position={[0, 2, -0.6]} onClick={handleClick}>
         <planeGeometry args={[3.4, 3.4]} />
         <meshStandardMaterial
           color="#05060F"
@@ -138,8 +177,17 @@ export default function Estande({ empresa }: EstandeProps) {
       />
 
       {preset.pointLightEstande && (
-        <pointLight position={[0, 2.5, 0]} color={cor} intensity={1.6} distance={6} />
+        <pointLight position={[0, 2.5, 0]} color={cor} intensity={dentro ? 2.4 : 1.6} distance={6} />
       )}
+
+      {/* DwellTracker — registra visita quando jogador fica >= 2s no raio */}
+      <DwellTracker
+        posicao={posicao}
+        companySlug={empresa.slug}
+        raio={4}
+        tempoMinimo={2}
+        onDentroChange={setDentro}
+      />
     </group>
   );
 }
