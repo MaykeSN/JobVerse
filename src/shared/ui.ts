@@ -4,11 +4,15 @@ import type { Empresa, Vaga } from './tipos';
 interface UIState {
   empresaAberta: Empresa | null;
   vagaSelecionada: Vaga | null;
+  // Flag de sessão — `true` depois que o usuário entrou na feira pela primeira vez.
+  // Não persiste; reseta ao recarregar (intencional pra dar boas-vindas se a sessão recomeçar).
+  jaEntrou: boolean;
   abrirEmpresa: (e: Empresa) => void;
   fecharEmpresa: () => void;
   abrirCV: (v: Vaga) => void;
   fecharCV: () => void;
   fecharTudo: () => void;
+  marcarEntrou: () => void;
 }
 
 /**
@@ -21,11 +25,13 @@ interface UIState {
 export const useUI = create<UIState>((set) => ({
   empresaAberta: null,
   vagaSelecionada: null,
+  jaEntrou: false,
   abrirEmpresa: (e) => set({ empresaAberta: e }),
   fecharEmpresa: () => set({ empresaAberta: null, vagaSelecionada: null }),
   abrirCV: (v) => set({ vagaSelecionada: v }),
   fecharCV: () => set({ vagaSelecionada: null }),
-  fecharTudo: () => set({ empresaAberta: null, vagaSelecionada: null })
+  fecharTudo: () => set({ empresaAberta: null, vagaSelecionada: null }),
+  marcarEntrou: () => set({ jaEntrou: true })
 }));
 
 /**

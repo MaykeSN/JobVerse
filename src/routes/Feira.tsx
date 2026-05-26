@@ -6,6 +6,7 @@ import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing';
 import { useCandidato } from '../shared/candidato';
 import { usePreset } from '../shared/graficos';
 import { useUI, useTemOverlayAberto } from '../shared/ui';
+import { MousePointerClick } from 'lucide-react';
 import { empresas } from '../feira/empresas';
 import Estande from '../feira/Estande';
 import PlayerControls, { usePointerLockState } from '../feira/PlayerControls';
@@ -87,6 +88,8 @@ export default function Feira() {
   const vagaSelecionada = useUI((s) => s.vagaSelecionada);
   const fecharEmpresa = useUI((s) => s.fecharEmpresa);
   const fecharCV = useUI((s) => s.fecharCV);
+  const jaEntrou = useUI((s) => s.jaEntrou);
+  const marcarEntrou = useUI((s) => s.marcarEntrou);
   const temOverlay = useTemOverlayAberto();
 
   // Quando um modal abre, libera o pointer lock pra não conflitar com o mouse no DOM
@@ -95,6 +98,16 @@ export default function Feira() {
       document.exitPointerLock();
     }
   }, [temOverlay]);
+
+  // Marca que o usuário já entrou ao menos uma vez (gate fullscreen só na 1ª)
+  useEffect(() => {
+    if (locked && !jaEntrou) marcarEntrou();
+  }, [locked, jaEntrou, marcarEntrou]);
+
+  const retravarCursor = () => {
+    // PointerLockControls do drei lockam o body por default
+    document.body.requestPointerLock();
+  };
 
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-bg-deep">
@@ -137,16 +150,36 @@ export default function Feira() {
         </div>
       )}
 
-      {/* Gate de entrada — overlay HTML enquanto pointer não-locked E sem modal aberto */}
-      {!locked && !temOverlay && (
-        <div className="absolute inset-0 z-20 flex items-center justify-center bg-bg-deep/70 backdrop-blur-sm">
+      {/* Gate de boas-vindas — fullscreen, só na PRIMEIRA entrada da sessão */}
+      {!locked && !temOverlay && !jaEntrou && (
+        <div
+          onClick={retravarCursor}
+          className="absolute inset-0 z-20 flex items-center justify-center bg-bg-deep/70 backdrop-blur-sm cursor-pointer"
+        >
           <div className="text-center px-8 py-6 border border-neon-cyan/30 rounded-xl bg-bg-panel/70 shadow-[0_0_40px_rgba(0,212,255,0.25)]">
             <p className="text-[10px] uppercase tracking-[0.4em] text-text-dim">JobVerse</p>
             <p className="font-display text-3xl text-glow-cyan mt-2">Clique pra entrar</p>
             <p className="text-sm text-text-dim mt-3">
-              WASD + mouse pra mover · Shift pra correr · ESC pra liberar o cursor
+              WASD + mouse pra mover · Shift pra correr · ESC libera o cursor
             </p>
           </div>
+        </div>
+      )}
+
+      {/* Cursor livre depois da 1ª entrada — pill discreto, NÃO bloqueia a cena */}
+      {!locked && !temOverlay && jaEntrou && (
+        <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-20 pointer-events-auto">
+          <button
+            type="button"
+            onClick={retravarCursor}
+            className="group inline-flex items-center gap-2 px-4 py-2 rounded-full border border-neon-cyan/40 bg-bg-panel/80 backdrop-blur text-text-bright hover:border-neon-cyan hover:shadow-[0_0_20px_rgba(0,212,255,0.4)] transition"
+          >
+            <MousePointerClick className="w-4 h-4 text-neon-cyan group-hover:scale-110 transition-transform" />
+            <span className="text-[10px] uppercase tracking-[0.25em] text-text-dim">
+              Cursor livre ·
+            </span>
+            <span className="font-display text-sm text-glow-cyan">Voltar pra feira</span>
+          </button>
         </div>
       )}
 
