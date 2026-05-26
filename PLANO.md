@@ -428,12 +428,18 @@ Cada empresa precisa:
 - [x] "Boneco de palha" R3F: cena com piso reflexivo + 5 totens em pentágono + Sparkles + Bloom — pronto pra rodar local
 
 ### Fase 1 — Schema e dados
-- [ ] Aplicar `schema.sql` no Supabase (6 tabelas)
-- [ ] Habilitar realtime em `applications` e `visits`
-- [ ] Definir as 5 empresas fictícias (missão, vagas, cor)
-- [ ] Gerar logos com IA (declarar ferramenta no `docs/declaracao-ia.md`)
-- [ ] Escrever `seed.sql` com 5 empresas + ~10 vagas
-- [ ] Validar SELECT pelo dashboard Supabase
+- [x] Escrever `supabase/schema.sql` com 6 tabelas + FKs + índices + pgcrypto
+- [x] Comando para habilitar realtime em `applications` e `visits` no schema
+- [x] Definir as 5 empresas fictícias com missões originais
+- [x] Escrever `supabase/seed.sql` (idempotente) com 5 empresas + 12 vagas
+- [x] Escrever Edge Function stub `supabase/functions/ai-summary/index.ts` com CORS
+- [x] Escrever `docs/setup-supabase.md` com passo-a-passo
+- [x] Escrever `src/shared/tipos-db.ts` com Database type
+- [ ] Aplicar `schema.sql` no Supabase *(manual — depende de criar projeto)*
+- [ ] Aplicar `seed.sql` no Supabase *(manual)*
+- [ ] Deploy Edge Function via CLI *(manual)*
+- [ ] Validar SELECT pelo dashboard Supabase *(manual)*
+- [ ] Gerar logos com IA (declarar em `docs/declaracao-ia.md`) *(opcional, fase 6)*
 
 ### Fase 2 — Esqueleto React
 - [ ] Setup react-router com 3 rotas (/, /feira, /recrutador/:slug)
@@ -443,22 +449,27 @@ Cada empresa precisa:
 - [ ] Submit do form: INSERT em candidates, navega pra /feira
 
 ### Fase 3 — Cena 3D base
-- [ ] `<Canvas>` com fog, Environment night, color background
-- [ ] `<PisoNeon />` reflexivo com linhas pro spawn
-- [ ] PlayerControls (PointerLock + WASD via KeyboardControls)
-- [ ] 5 estandes posicionados em pentágono (primitivos por enquanto)
-- [ ] Sparkles ambiente + Sparkles por estande (cor da empresa)
-- [ ] EffectComposer com Bloom + Vignette
+- [x] `<Canvas>` com fog, Environment night, color background
+- [x] `<Piso>` com `MeshReflectorMaterial` (reflexo do mundo)
+- [x] `<LinhasNeon>` ligando spawn aos 5 estandes (vibe Tron)
+- [x] `<PracaCentral>` com 2 anéis no spawn
+- [x] `PlayerControls` (PointerLockControls + WASD via KeyboardControls + Shift run)
+- [x] Easing suave da câmera pro nível humano (welcome shot estabelecedor)
+- [x] Gate "Clique pra entrar" + crosshair quando lockado
+- [x] 5 estandes posicionados em pentágono renderizando via `<Estande>`
+- [x] Sparkles ambiente + Sparkles por estande na cor da empresa
+- [x] EffectComposer com Bloom + Vignette
 
 ### Fase 4 — Estandes funcionais
-- [ ] `<Estande />` renderizando backdrop + logo + painel de texto 3D
-- [ ] `<Float>` no painel flutuante
-- [ ] Totem clicável (onClick em mesh)
-- [ ] DwellTracker registrando visitas
+- [x] `<Estande />` com base reflexiva + pilares portal + backdrop + painel de texto 3D (nome, missão, stack)
+- [x] `<Float>` no painel flutuante
+- [x] HUD com nome + contadores reativos (zustand) — base já existe
+- [ ] Totem/portal clicável (onClick em mesh do estande)
+- [ ] DwellTracker registrando visitas no Supabase
 - [ ] Modal de vagas com framer-motion entrance
-- [ ] Modal de CV com form completo
-- [ ] INSERT em applications + toast de confirmação
-- [ ] HUD com nome + contadores reativos (zustand)
+- [ ] Modal de CV com form completo (skills, sobre, github)
+- [ ] INSERT em `applications` + toast de confirmação
+- [ ] Atualizar contadores ao candidatar
 
 ### Fase 5 — Painel recrutador
 - [ ] Rota /recrutador/:slug lendo param
