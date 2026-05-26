@@ -56,7 +56,7 @@ export default function DwellTracker({
       if (entrada !== null) {
         const tempo = clock.elapsedTime - entrada;
         if (tempo >= tempoMinimo) {
-          registrarVisita(companySlug);
+          registrarVisita(companySlug, Math.round(tempo));
         }
       }
       force((n) => n + 1);

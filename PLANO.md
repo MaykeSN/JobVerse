@@ -476,14 +476,20 @@ Cada empresa precisa:
 - [ ] Swap mock → Supabase (quando schema/seed aplicados no projeto Supabase real)
 
 ### Fase 5 — Painel recrutador
-- [ ] Rota /recrutador/:slug lendo param
-- [ ] Header com cor/logo dinâmicos
-- [ ] Card de CVs com subscribe realtime
-- [ ] Card de visitas com recharts BarChart
-- [ ] Card "Análise IA — em breve" estilizado (blur + sparkles)
-- [ ] Edge Function `ai-summary` stub deployada
-- [ ] Background tsParticles sutil
-- [ ] Animação stagger de entrada (framer-motion)
+- [x] Rota `/recrutador/:slug` com layout grid 60/40 (lista + sidebar)
+- [x] Header com cor/logo dinâmicos + missão da empresa
+- [x] `<IndicadorAoVivo />` pulsante verde lima no header
+- [x] `<ListaCVs />` realtime — pega 5 mock + "Você" no topo (se candidatou) + chegadas via BroadcastChannel
+- [x] Card de CV: avatar com inicial, nome, "há X min", vaga (badge), skills (chips), sobre truncado, github, slot IA `—`
+- [x] Highlight pulsante neon nos CVs "novos" por 5s
+- [x] `<Heatmap />` BarChart horizontal recharts — Top 5 por dwell time na cor da empresa
+- [x] `<IAEmBreve />` extraído pra componente — gradient roxo+ciano + sparkles + botão desabilitado
+- [x] `<ParticulasBg densidade="baixa" />` sutil
+- [x] Animação stagger framer-motion na entrada
+- [x] Banco mock `src/feira/candidatos-mock.ts` — 26 candidatos brasileiros pelas 5 empresas
+- [x] `src/shared/realtime.ts` — wrapper BroadcastChannel cross-tab
+- [x] `registrarCandidatura`/`registrarVisita` emitem events realtime
+- [ ] Edge Function `ai-summary` stub deployada *(manual — quando Supabase aplicado)*
 
 ### Fase 6 — Polimento visual
 - [ ] Substituir primitivos por GLTF (Quaternius / Kenney / Poly Pizza)
