@@ -45,7 +45,8 @@ function Mover() {
     forwardVec.current.y = 0;
     forwardVec.current.normalize();
 
-    rightVec.current.set(forwardVec.current.z, 0, -forwardVec.current.x);
+    // Right = forward rotated +90° on Y (era invertido — A/D trocados antes do fix)
+    rightVec.current.set(-forwardVec.current.z, 0, forwardVec.current.x);
 
     moveVec.current.set(0, 0, 0);
     if (forward) moveVec.current.add(forwardVec.current);

@@ -4,27 +4,34 @@ import { Canvas } from '@react-three/fiber';
 import { Line, MeshReflectorMaterial, Sparkles, Environment } from '@react-three/drei';
 import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing';
 import { useCandidato } from '../shared/candidato';
+import { usePreset } from '../shared/graficos';
 import { empresas } from '../feira/empresas';
 import Estande from '../feira/Estande';
 import PlayerControls, { usePointerLockState } from '../feira/PlayerControls';
+import SeletorQualidade from '../components/SeletorQualidade';
 
 function Piso() {
+  const preset = usePreset();
   return (
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
       <planeGeometry args={[80, 80]} />
-      <MeshReflectorMaterial
-        blur={[200, 80]}
-        resolution={512}
-        mixBlur={1}
-        mixStrength={30}
-        roughness={0.85}
-        depthScale={1}
-        minDepthThreshold={0.4}
-        maxDepthThreshold={1.4}
-        color="#0B0D1A"
-        metalness={0.8}
-        mirror={0.35}
-      />
+      {preset.reflexo ? (
+        <MeshReflectorMaterial
+          blur={preset.reflexoBlur}
+          resolution={preset.reflexoResolution}
+          mixBlur={1}
+          mixStrength={preset.reflexoMirror * 90}
+          roughness={0.85}
+          depthScale={1}
+          minDepthThreshold={0.4}
+          maxDepthThreshold={1.4}
+          color="#0B0D1A"
+          metalness={0.8}
+          mirror={preset.reflexoMirror}
+        />
+      ) : (
+        <meshStandardMaterial color="#0B0D1A" metalness={0.5} roughness={0.7} />
+      )}
     </mesh>
   );
 }
@@ -70,6 +77,7 @@ export default function Feira() {
   const visitadas = useCandidato((s) => s.visitadas);
   const candidaturas = useCandidato((s) => s.candidaturas);
   const locked = usePointerLockState();
+  const preset = usePreset();
 
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-bg-deep">
@@ -101,6 +109,9 @@ export default function Feira() {
           WASD + mouse · Shift pra correr · ESC pra sair
         </p>
       </div>
+
+      {/* Seletor de qualidade gráfica — sempre visível, fora do gate */}
+      <SeletorQualidade posicao="bottom-left" />
 
       {/* Crosshair sutil quando em FPS */}
       {locked && (
@@ -137,9 +148,9 @@ export default function Feira() {
           {empresas.map((e) => (
             <Estande key={e.slug} empresa={e} />
           ))}
-          {/* Sparkles ambiente */}
+          {/* Sparkles ambiente — quantidade depende da qualidade */}
           <Sparkles
-            count={120}
+            count={preset.sparklesAmbiente}
             scale={[40, 8, 40]}
             position={[0, 4, 0]}
             size={2}
@@ -151,10 +162,21 @@ export default function Feira() {
 
         <PlayerControls />
 
-        <EffectComposer>
-          <Bloom intensity={1.1} luminanceThreshold={0.25} luminanceSmoothing={0.9} mipmapBlur />
-          <Vignette eskil={false} offset={0.2} darkness={0.75} />
-        </EffectComposer>
+        {preset.bloom && (
+          <EffectComposer>
+            <Bloom
+              intensity={preset.bloomIntensity}
+              luminanceThreshold={0.25}
+              luminanceSmoothing={0.9}
+              mipmapBlur
+            />
+            {preset.vignette ? (
+              <Vignette eskil={false} offset={0.2} darkness={0.75} />
+            ) : (
+              <></>
+            )}
+          </EffectComposer>
+        )}
       </Canvas>
     </div>
   );

@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { Float, Sparkles, Text } from '@react-three/drei';
 import { Vector3 } from 'three';
 import type { Empresa } from '../shared/tipos';
+import { usePreset } from '../shared/graficos';
 
 interface EstandeProps {
   empresa: Empresa;
@@ -11,6 +12,7 @@ const SPAWN = new Vector3(0, 0, 0);
 
 export default function Estande({ empresa }: EstandeProps) {
   const { posicao, cor, nome, missao, stack } = empresa;
+  const preset = usePreset();
 
   // Estande olha pra praça central — calculamos yaw uma vez
   const yaw = useMemo(() => {
@@ -127,7 +129,7 @@ export default function Estande({ empresa }: EstandeProps) {
 
       {/* Sparkles colunar na cor da empresa */}
       <Sparkles
-        count={45}
+        count={preset.sparklesEstande}
         scale={[3, 4.5, 3]}
         position={[0, 2.2, 0]}
         size={3}
@@ -135,8 +137,9 @@ export default function Estande({ empresa }: EstandeProps) {
         color={cor}
       />
 
-      {/* Luz pontual sutil pra ajudar a "sentir" a cor */}
-      <pointLight position={[0, 2.5, 0]} color={cor} intensity={1.6} distance={6} />
+      {preset.pointLightEstande && (
+        <pointLight position={[0, 2.5, 0]} color={cor} intensity={1.6} distance={6} />
+      )}
     </group>
   );
 }

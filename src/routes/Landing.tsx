@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { ArrowRight, Sparkles } from 'lucide-react';
 import ParticulasBg from '../shared/ParticulasBg';
 import { useCandidato } from '../shared/candidato';
+import SeletorQualidade from '../components/SeletorQualidade';
 
 export default function Landing() {
   const navigate = useNavigate();
@@ -20,7 +21,8 @@ export default function Landing() {
 
   return (
     <div className="relative min-h-screen flex items-center justify-center overflow-hidden">
-      <ParticulasBg densidade="media" />
+      <ParticulasBg />
+      <SeletorQualidade posicao="bottom-right" />
 
       <motion.div
         initial={{ opacity: 0, y: 24 }}

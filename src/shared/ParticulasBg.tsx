@@ -1,13 +1,16 @@
 import { useEffect, useState } from 'react';
 import Particles, { initParticlesEngine } from '@tsparticles/react';
 import { loadSlim } from '@tsparticles/slim';
+import { usePreset } from './graficos';
 
 interface Props {
   densidade?: 'baixa' | 'media' | 'alta';
 }
 
-export default function ParticulasBg({ densidade = 'media' }: Props) {
+export default function ParticulasBg({ densidade }: Props) {
   const [pronto, setPronto] = useState(false);
+  const preset = usePreset();
+  const efetiva = densidade ?? preset.particulas2D;
 
   useEffect(() => {
     initParticlesEngine(async (engine) => {
@@ -17,7 +20,7 @@ export default function ParticulasBg({ densidade = 'media' }: Props) {
 
   if (!pronto) return null;
 
-  const numero = densidade === 'alta' ? 100 : densidade === 'baixa' ? 30 : 60;
+  const numero = efetiva === 'alta' ? 100 : efetiva === 'baixa' ? 30 : 60;
 
   return (
     <Particles
