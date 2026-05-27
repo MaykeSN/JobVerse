@@ -18,7 +18,11 @@ import LoadingScreen from '../components/LoadingScreen';
 import ControlesHUD from '../components/ControlesHUD';
 import { empresas } from '../feira/empresas';
 import Estande from '../feira/Estande';
-import PlayerControls, { usePointerLockState } from '../feira/PlayerControls';
+import PlayerControls, {
+  usePointerLockState,
+  travarPlayer,
+  destravarPlayer
+} from '../feira/PlayerControls';
 import SeletorQualidade from '../components/SeletorQualidade';
 import ModalVagas from '../components/ModalVagas';
 import ModalCV from '../components/ModalCV';
@@ -148,7 +152,7 @@ export default function Feira() {
     overlayAnteriorRef.current = temOverlay;
 
     if (temOverlay && document.pointerLockElement) {
-      document.exitPointerLock();
+      destravarPlayer();
       return;
     }
 
@@ -162,7 +166,10 @@ export default function Feira() {
           ui.authModal !== false ||
           ui.minhasCandidaturasAberto;
         if (!ainda && !document.pointerLockElement) {
-          document.body.requestPointerLock();
+          // Importante: usar travarPlayer() em vez de requestPointerLock()
+          // direto — o drei precisa ativar os listeners de mousemove pra
+          // a câmera voltar a rotacionar.
+          travarPlayer();
         }
       }, 180);
       return () => window.clearTimeout(t);

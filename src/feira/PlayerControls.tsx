@@ -9,6 +9,31 @@ import { Vector3 } from 'three';
 
 type Movement = 'forward' | 'back' | 'left' | 'right' | 'run';
 
+/**
+ * Singleton handle pro controls do drei. Setado quando o componente monta
+ * (via useThree dentro do Canvas) e usado por código fora do Canvas que
+ * precisa trancar/destrancar o cursor programaticamente.
+ *
+ * Importante: usar `lock()` do drei (que ativa os listeners de mousemove
+ * pra rotação da câmera) em vez de `document.body.requestPointerLock()`
+ * direto — caso contrário o cursor trava mas a câmera não vira.
+ */
+interface ControlsHandle {
+  lock(): void;
+  unlock(): void;
+}
+
+let handle: ControlsHandle | null = null;
+
+export function travarPlayer() {
+  handle?.lock();
+}
+
+export function destravarPlayer() {
+  if (handle) handle.unlock();
+  else if (document.pointerLockElement) document.exitPointerLock();
+}
+
 const KEY_MAP = [
   { name: 'forward', keys: ['KeyW', 'ArrowUp'] },
   { name: 'back', keys: ['KeyS', 'ArrowDown'] },
@@ -78,19 +103,39 @@ export default function PlayerControls({ onLockChange }: PlayerControlsProps) {
   return (
     <KeyboardControls map={map}>
       <Mover />
+      <ConectarHandle />
       {/*
-        selector restringe o auto-lock a elementos com [data-jobverse-lock].
-        Sem isso, click em qualquer lugar do canvas (incluindo "vazamentos"
-        de UI sobreposta) ativava lock indesejado. Agora só o gate inicial
-        e o pill "Voltar pra feira" travam o cursor.
+        - selector: lock só dispara clicando em [data-jobverse-lock] (gate
+          inicial + pill "Voltar pra feira"), evitando click no canvas
+          vazio ou em UI sobreposta acionar o lock acidentalmente.
+        - makeDefault: expõe esse controls em useThree(s => s.controls)
+          pro ConectarHandle registrar no singleton.
       */}
       <PointerLockControls
+        makeDefault
         selector="[data-jobverse-lock]"
         onLock={() => onLockChange?.(true)}
         onUnlock={() => onLockChange?.(false)}
       />
     </KeyboardControls>
   );
+}
+
+/**
+ * Componente interno que vive DENTRO do Canvas pra acessar `useThree`
+ * e registrar o controls do drei num singleton externo.
+ */
+function ConectarHandle() {
+  const controls = useThree((s) => s.controls) as unknown as ControlsHandle | null;
+  useEffect(() => {
+    if (controls && typeof controls.lock === 'function' && typeof controls.unlock === 'function') {
+      handle = controls;
+    }
+    return () => {
+      handle = null;
+    };
+  }, [controls]);
+  return null;
 }
 
 /**

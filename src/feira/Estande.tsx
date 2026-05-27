@@ -7,6 +7,7 @@ import { usePreset } from '../shared/graficos';
 import { useGraficos } from '../shared/graficos';
 import { useUI } from '../shared/ui';
 import { tocarClick } from '../shared/audio';
+import { destravarPlayer } from './PlayerControls';
 import DwellTracker from './DwellTracker';
 
 interface EstandeProps {
@@ -62,9 +63,10 @@ export default function Estande({ empresa, contagens }: EstandeProps) {
   const handleClick = (e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation();
     tocarClick();
-    // Libera o pointer lock IMEDIATAMENTE (síncrono) pra não ter delay perceptível.
-    // O useEffect na Feira faria isso mas só depois do render — antecipamos aqui.
-    if (document.pointerLockElement) document.exitPointerLock();
+    // Libera via destravarPlayer() (que avisa o drei do unlock) em vez de
+    // exitPointerLock() direto — mantém o estado interno do controles
+    // sincronizado pra quando o cursor voltar a travar.
+    destravarPlayer();
     abrirEmpresa(empresa);
   };
 
