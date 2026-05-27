@@ -11,7 +11,7 @@ import {
 } from 'recharts';
 import { Activity } from 'lucide-react';
 import type { Empresa } from '../shared/tipos';
-import { candidatosPorEmpresa } from '../feira/candidatos-mock';
+import { useVisitasDaEmpresa, type ItemVisita } from '../shared/db';
 import { useRealtime, type RealtimeEvent } from '../shared/realtime';
 
 interface Props {
@@ -51,25 +51,22 @@ const TooltipCustom = ({ active, payload }: TooltipProps) => {
 };
 
 /**
- * BarChart horizontal — top 6 candidatos por dwell time no estande.
- * Reage a eventos `nova-visita` do BroadcastChannel: atualiza ou insere o candidato.
+ * BarChart horizontal — top candidatos por dwell time no estande.
+ * Fonte primária: Supabase (com realtime subscribe via useVisitasDaEmpresa).
+ * Fonte de fallback: mock local quando sem env.
+ * Patches via BroadcastChannel também são aplicados — cross-tab dev.
  */
 export default function Heatmap({ empresa }: Props) {
+  const { dados: visitasDb } = useVisitasDaEmpresa(empresa.slug);
+
+  // Espelha o que veio do hook num state local pra poder patchar via BroadcastChannel.
   const [dados, setDados] = useState<DadoBarra[]>(() =>
-    candidatosPorEmpresa(empresa.slug).map((c) => ({
-      nome: c.nome,
-      segundos: c.dwellSeconds
-    }))
+    visitasDb.map((v: ItemVisita) => ({ nome: v.nome, segundos: v.segundos }))
   );
 
   useEffect(() => {
-    setDados(
-      candidatosPorEmpresa(empresa.slug).map((c) => ({
-        nome: c.nome,
-        segundos: c.dwellSeconds
-      }))
-    );
-  }, [empresa.slug]);
+    setDados(visitasDb.map((v) => ({ nome: v.nome, segundos: v.segundos })));
+  }, [visitasDb]);
 
   const onRealtime = useCallback(
     (evt: RealtimeEvent) => {
@@ -79,7 +76,7 @@ export default function Heatmap({ empresa }: Props) {
       setDados((prev) => {
         const existe = prev.findIndex((d) => d.nome === evt.nomeCandidato);
         if (existe >= 0) {
-          // Pega o MAIOR dwell entre o registrado e o novo — visita pode ser repetida.
+          // Pega o MAIOR dwell — visita pode repetir.
           const novoSeg = Math.max(prev[existe].segundos, evt.dwellSeconds);
           const clonado = prev.slice();
           clonado[existe] = { ...clonado[existe], segundos: novoSeg };
@@ -125,45 +122,51 @@ export default function Heatmap({ empresa }: Props) {
       </p>
 
       <div className="w-full h-[280px]">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart
-            data={dadosLegiveis}
-            layout="vertical"
-            margin={{ top: 4, right: 16, bottom: 4, left: 4 }}
-          >
-            <CartesianGrid
-              strokeDasharray="3 6"
-              stroke="rgba(148, 163, 184, 0.12)"
-              horizontal={false}
-            />
-            <XAxis
-              type="number"
-              stroke="#64748B"
-              tick={{ fill: '#64748B', fontSize: 11 }}
-              tickFormatter={(v: number) => formatarSegundos(v)}
-            />
-            <YAxis
-              type="category"
-              dataKey="nome"
-              stroke="#94A3B8"
-              tick={{ fill: '#94A3B8', fontSize: 11 }}
-              width={96}
-            />
-            <Tooltip
-              content={<TooltipCustom />}
-              cursor={{ fill: `${empresa.cor}10` }}
-            />
-            <Bar dataKey="segundos" radius={[0, 6, 6, 0]} isAnimationActive>
-              {dadosLegiveis.map((entry, i) => (
-                <Cell
-                  key={entry.nome}
-                  fill={empresa.cor}
-                  fillOpacity={1 - i * 0.12}
-                />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+        {dadosLegiveis.length === 0 ? (
+          <div className="flex items-center justify-center h-full text-sm text-text-muted">
+            Nenhuma visita registrada ainda.
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={dadosLegiveis}
+              layout="vertical"
+              margin={{ top: 4, right: 16, bottom: 4, left: 4 }}
+            >
+              <CartesianGrid
+                strokeDasharray="3 6"
+                stroke="rgba(148, 163, 184, 0.12)"
+                horizontal={false}
+              />
+              <XAxis
+                type="number"
+                stroke="#64748B"
+                tick={{ fill: '#64748B', fontSize: 11 }}
+                tickFormatter={(v: number) => formatarSegundos(v)}
+              />
+              <YAxis
+                type="category"
+                dataKey="nome"
+                stroke="#94A3B8"
+                tick={{ fill: '#94A3B8', fontSize: 11 }}
+                width={96}
+              />
+              <Tooltip
+                content={<TooltipCustom />}
+                cursor={{ fill: `${empresa.cor}10` }}
+              />
+              <Bar dataKey="segundos" radius={[0, 6, 6, 0]} isAnimationActive>
+                {dadosLegiveis.map((entry, i) => (
+                  <Cell
+                    key={entry.nome}
+                    fill={empresa.cor}
+                    fillOpacity={1 - i * 0.12}
+                  />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        )}
       </div>
     </div>
   );

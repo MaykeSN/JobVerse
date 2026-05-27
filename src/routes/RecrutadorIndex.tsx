@@ -1,11 +1,13 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowRight, Briefcase, ArrowLeft } from 'lucide-react';
-import { empresas } from '../feira/empresas';
+import { useEmpresas } from '../shared/db';
 import ParticulasBg from '../shared/ParticulasBg';
 import SeletorQualidade from '../components/SeletorQualidade';
 
 export default function RecrutadorIndex() {
+  // `useEmpresas` já tem fallback pro mock quando sem Supabase ou enquanto carrega.
+  const { dados: empresas } = useEmpresas();
   return (
     <div className="relative min-h-screen bg-bg-deep overflow-hidden">
       <ParticulasBg densidade="baixa" />

@@ -1,8 +1,8 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { X, Briefcase, Check } from 'lucide-react';
 import type { Empresa } from '../shared/tipos';
-import { vagasPorSlug } from '../feira/vagas';
+import { useVagasDaEmpresa } from '../shared/db';
 import { useCandidato } from '../shared/candidato';
 import { useUI } from '../shared/ui';
 
@@ -21,10 +21,7 @@ export default function ModalVagas({ empresa, onFechar }: Props) {
   const abrirCV = useUI((s) => s.abrirCV);
   const candidaturas = useCandidato((s) => s.candidaturas);
 
-  const vagas = useMemo(
-    () => (empresa ? vagasPorSlug(empresa.slug) : []),
-    [empresa]
-  );
+  const { dados: vagas, carregando } = useVagasDaEmpresa(empresa?.slug);
 
   // ESC fecha
   useEffect(() => {
@@ -116,7 +113,9 @@ export default function ModalVagas({ empresa, onFechar }: Props) {
             <div className="overflow-y-auto px-7 py-5 space-y-4">
               {vagas.length === 0 ? (
                 <p className="text-text-dim text-sm">
-                  Nenhuma vaga cadastrada no momento.
+                  {carregando
+                    ? 'Carregando vagas…'
+                    : 'Nenhuma vaga cadastrada no momento.'}
                 </p>
               ) : (
                 vagas.map((vaga) => {

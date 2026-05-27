@@ -2,8 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Github, Sparkles, Check } from 'lucide-react';
 import type { Empresa, CandidatoMock } from '../shared/tipos';
-import { candidatosPorEmpresa } from '../feira/candidatos-mock';
-import { vagaPorId, vagasPorSlug } from '../feira/vagas';
+import { useCVsDaEmpresa, useVagasDaEmpresa, vagaPorIdEmLista } from '../shared/db';
 import { useCandidato } from '../shared/candidato';
 import { useRealtime, type RealtimeEvent } from '../shared/realtime';
 
@@ -13,9 +12,10 @@ interface Props {
 
 /**
  * Item da lista. Pode ser:
- *  - Um candidato do banco mockado (seed inicial)
- *  - O próprio usuário atual quando ele tem candidatura nessa empresa (`isVoce`)
- *  - Uma candidatura realtime chegando de outra aba (`isNovo` por 5s)
+ *  - Um candidato vindo do Supabase (ou do mock como fallback)
+ *  - O próprio usuário atual quando tem candidatura nessa empresa (`isVoce`)
+ *  - Uma candidatura realtime chegando (BroadcastChannel ou Supabase Realtime)
+ *    com flag `isNovo` por 5s pra highlight.
  */
 interface ItemCV extends CandidatoMock {
   isVoce?: boolean;
@@ -45,6 +45,11 @@ const truncar = (texto: string, max: number): string =>
   texto.length <= max ? texto : `${texto.slice(0, max - 1).trimEnd()}…`;
 
 export default function ListaCVs({ empresa }: Props) {
+  // CVs do DB (com fallback pro mock dentro do hook).
+  const { dados: cvsDb, carregando } = useCVsDaEmpresa(empresa.slug);
+  // Vagas da empresa pra resolver nome da vaga em cada CV.
+  const { dados: vagas } = useVagasDaEmpresa(empresa.slug);
+
   // CV do usuário atual no zustand local.
   const candidaturasUser = useCandidato((s) => s.candidaturas);
   const nomeUser = useCandidato((s) => s.nome);
@@ -53,24 +58,27 @@ export default function ListaCVs({ empresa }: Props) {
   const sobreUser = useCandidato((s) => s.sobre);
   const githubUser = useCandidato((s) => s.github);
 
-  // Estado: lista de itens.
-  const [items, setItems] = useState<ItemCV[]>(() => candidatosPorEmpresa(empresa.slug));
+  // Lista local (inicializa do hook, depois sofre patches via realtime).
+  const [items, setItems] = useState<ItemCV[]>(() =>
+    cvsDb.map((c) => ({ ...c }))
+  );
 
-  // Reset quando trocar empresa (rota dinâmica).
+  // Sincroniza com o hook (quando o fetch volta ou muda de empresa).
   useEffect(() => {
-    setItems(candidatosPorEmpresa(empresa.slug));
-  }, [empresa.slug]);
+    setItems(cvsDb.map((c) => ({ ...c })));
+  }, [cvsDb]);
 
   // Insere o usuário no topo (uma vez por jobId desta empresa).
   useEffect(() => {
     if (!idUser) return;
-    const vagasDaEmpresa = new Set(vagasPorSlug(empresa.slug).map((v) => v.id));
-    const candidaturasDaEmpresa = candidaturasUser.filter((id) => vagasDaEmpresa.has(id));
+    const vagasDaEmpresa = new Set(vagas.map((v) => v.id));
+    const candidaturasDaEmpresa = candidaturasUser.filter((id) =>
+      vagasDaEmpresa.has(id)
+    );
     if (candidaturasDaEmpresa.length === 0) return;
 
     setItems((prev) => {
       const sem = prev.filter((p) => !p.isVoce);
-      // Pega a candidatura mais recente (último do array) como referência.
       const jobId = candidaturasDaEmpresa[candidaturasDaEmpresa.length - 1];
       const eu: ItemCV = {
         id: `voce-${idUser}`,
@@ -93,6 +101,7 @@ export default function ListaCVs({ empresa }: Props) {
     sobreUser,
     githubUser,
     candidaturasUser,
+    vagas,
     empresa.slug
   ]);
 
@@ -103,18 +112,18 @@ export default function ListaCVs({ empresa }: Props) {
     }, 5000);
   }, []);
 
-  // Handler realtime.
+  // Handler do BroadcastChannel (fallback cross-tab). Em prod o Supabase
+  // Realtime já injeta o item via useCVsDaEmpresa; aqui é só compatibilidade.
   const onRealtime = useCallback(
     (evt: RealtimeEvent) => {
       if (evt.tipo !== 'nova-candidatura') return;
       if (evt.companySlug !== empresa.slug) return;
 
-      const vaga = vagaPorId(evt.jobId);
+      const vaga = vagaPorIdEmLista(vagas, evt.jobId);
       if (!vaga) return;
 
       const novoId = `rt-${evt.candidatoId}-${evt.jobId}`;
       setItems((prev) => {
-        // Idempotência: ignora se já existe.
         if (prev.some((p) => p.id === novoId)) return prev;
         const novo: ItemCV = {
           id: novoId,
@@ -132,7 +141,7 @@ export default function ListaCVs({ empresa }: Props) {
       });
       limparHighlight(novoId);
     },
-    [empresa.slug, limparHighlight]
+    [empresa.slug, limparHighlight, vagas]
   );
 
   useRealtime(onRealtime);
@@ -152,7 +161,7 @@ export default function ListaCVs({ empresa }: Props) {
           </h2>
         </div>
         <p className="text-[10px] uppercase tracking-[0.25em] text-text-muted">
-          Ordenado por chegada
+          {carregando && items.length === 0 ? 'Carregando…' : 'Ordenado por chegada'}
         </p>
       </div>
 
@@ -163,10 +172,16 @@ export default function ListaCVs({ empresa }: Props) {
               key={item.id}
               item={item}
               empresa={empresa}
+              vagas={vagas}
               delay={idx * 0.04}
             />
           ))}
         </AnimatePresence>
+        {!carregando && items.length === 0 && (
+          <li className="text-sm text-text-muted text-center py-6">
+            Ainda não chegou nenhum CV. Aguardando candidatos…
+          </li>
+        )}
       </ul>
     </div>
   );
@@ -175,11 +190,12 @@ export default function ListaCVs({ empresa }: Props) {
 interface ItemCardProps {
   item: ItemCV;
   empresa: Empresa;
+  vagas: ReturnType<typeof useVagasDaEmpresa>['dados'];
   delay: number;
 }
 
-function ItemCard({ item, empresa, delay }: ItemCardProps) {
-  const vaga = useMemo(() => vagaPorId(item.jobId), [item.jobId]);
+function ItemCard({ item, empresa, vagas, delay }: ItemCardProps) {
+  const vaga = useMemo(() => vagaPorIdEmLista(vagas, item.jobId), [vagas, item.jobId]);
   const corAvatar = useMemo(() => corPorNome(item.nome), [item.nome]);
   const inicial = item.nome.trim().charAt(0).toUpperCase() || '?';
 

@@ -2,6 +2,7 @@ import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft } from 'lucide-react';
 import { empresaPorSlug } from '../feira/empresas';
+import { useEmpresas } from '../shared/db';
 import ParticulasBg from '../shared/ParticulasBg';
 import ListaCVs from '../recrutador/ListaCVs';
 import Heatmap from '../recrutador/Heatmap';
@@ -10,7 +11,10 @@ import IndicadorAoVivo from '../recrutador/IndicadorAoVivo';
 
 export default function Recrutador() {
   const { slug } = useParams<{ slug: string }>();
-  const empresa = slug ? empresaPorSlug(slug) : undefined;
+  // Tenta primeiro pela lista vinda do DB; se não chegou ainda, cai no mock.
+  const { dados: empresasDb } = useEmpresas();
+  const empresaDb = slug ? empresasDb.find((e) => e.slug === slug) : undefined;
+  const empresa = empresaDb ?? (slug ? empresaPorSlug(slug) : undefined);
 
   if (!empresa) {
     return (

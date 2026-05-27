@@ -1,3 +1,7 @@
+// Fallback cross-tab quando Supabase nao configurado.
+// Em prod, o Supabase Realtime cuida disso entre todos os browsers — esse
+// BroadcastChannel fica como rede de seguranca pra dev offline e testes locais.
+
 import { useEffect } from 'react';
 
 /**

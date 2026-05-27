@@ -1,4 +1,6 @@
 export interface Empresa {
+  /** UUID da empresa quando vem do DB. Pode ficar undefined no mock offline. */
+  id?: string;
   slug: string;
   nome: string;
   missao: string;
@@ -8,6 +10,7 @@ export interface Empresa {
 }
 
 export interface Vaga {
+  /** UUID quando vem do DB. No fallback mock é um slug determinístico. */
   id: string;
   companySlug: string;
   titulo: string;
