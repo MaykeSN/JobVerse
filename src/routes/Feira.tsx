@@ -1,4 +1,4 @@
-import { Suspense, useEffect } from 'react';
+import { Suspense, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Canvas } from '@react-three/fiber';
 import { Line, MeshReflectorMaterial, Sparkles, Environment } from '@react-three/drei';
@@ -9,11 +9,13 @@ import { usePreset } from '../shared/graficos';
 import { useUI, useTemOverlayAberto } from '../shared/ui';
 import { useRave, useKonami } from '../shared/easter-eggs';
 import { tocarRave } from '../shared/audio';
+import { useContagensPorEmpresa } from '../shared/contagens';
 import { MousePointerClick } from 'lucide-react';
 import { useCallback } from 'react';
 import ToggleAudio from '../components/ToggleAudio';
 import RaveOverlay from '../components/RaveOverlay';
 import LoadingScreen from '../components/LoadingScreen';
+import ControlesHUD from '../components/ControlesHUD';
 import { empresas } from '../feira/empresas';
 import Estande from '../feira/Estande';
 import PlayerControls, { usePointerLockState } from '../feira/PlayerControls';
@@ -102,6 +104,7 @@ export default function Feira() {
   const marcarEntrou = useUI((s) => s.marcarEntrou);
   const abrirMinhasCandidaturas = useUI((s) => s.abrirMinhasCandidaturas);
   const temOverlay = useTemOverlayAberto();
+  const contagens = useContagensPorEmpresa();
 
   // Guard de rota — recrutador logado vai direto pro próprio painel; nome
   // local (`nome`) também conta como "sessão dev anônima" e tem acesso.
@@ -137,12 +140,34 @@ export default function Feira() {
     return () => window.removeEventListener('keydown', handler);
   }, [usuario, temOverlay, abrirMinhasCandidaturas]);
 
-  // Quando um modal abre, libera o pointer lock pra não conflitar com o mouse no DOM
+  // Modal abriu → libera pointer lock. Modal fechou → re-trava após exit-animation
+  // (pra eliminar o "delay de voltar a controlar" que o usuário sentia).
+  const overlayAnteriorRef = useRef(temOverlay);
   useEffect(() => {
+    const era = overlayAnteriorRef.current;
+    overlayAnteriorRef.current = temOverlay;
+
     if (temOverlay && document.pointerLockElement) {
       document.exitPointerLock();
+      return;
     }
-  }, [temOverlay]);
+
+    if (era && !temOverlay && jaEntrou && !document.pointerLockElement) {
+      const t = window.setTimeout(() => {
+        // Safety: outro overlay pode ter aberto durante o delay
+        const ui = useUI.getState();
+        const ainda =
+          ui.empresaAberta !== null ||
+          ui.vagaSelecionada !== null ||
+          ui.authModal !== false ||
+          ui.minhasCandidaturasAberto;
+        if (!ainda && !document.pointerLockElement) {
+          document.body.requestPointerLock();
+        }
+      }, 180);
+      return () => window.clearTimeout(t);
+    }
+  }, [temOverlay, jaEntrou]);
 
   // Marca que o usuário já entrou ao menos uma vez (gate fullscreen só na 1ª)
   useEffect(() => {
@@ -192,17 +217,8 @@ export default function Feira() {
         </Link>
       </div>
 
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
-        <p className="text-[10px] uppercase tracking-[0.3em] text-text-muted">
-          WASD + mouse · Shift pra correr · Clique num estande pra ver vagas · ESC pra sair
-          {usuario?.tipo === 'dev' && (
-            <>
-              {' · '}
-              <span className="text-neon-cyan">M</span> pra minhas candidaturas
-            </>
-          )}
-        </p>
-      </div>
+      {/* HUD de controles estilo gamepad — só quando em jogo (lock + sem overlay) */}
+      {locked && !temOverlay && <ControlesHUD mostrarM={usuario?.tipo === 'dev'} />}
 
       {/* Seletor de qualidade gráfica — sempre visível, fora do gate */}
       <SeletorQualidade posicao="bottom-left" />
@@ -261,7 +277,7 @@ export default function Feira() {
           <PracaCentral />
           <LinhasNeon />
           {empresas.map((e) => (
-            <Estande key={e.slug} empresa={e} />
+            <Estande key={e.slug} empresa={e} contagens={contagens[e.slug]} />
           ))}
           {/* Sparkles ambiente — quantidade depende da qualidade (1.5x no rave) */}
           <Sparkles
