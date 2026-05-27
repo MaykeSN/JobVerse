@@ -233,12 +233,10 @@ export default function Feira() {
         </div>
       )}
 
-      {/* Gate de boas-vindas — fullscreen, só na PRIMEIRA entrada da sessão.
-          O `data-jobverse-lock` faz o PointerLockControls travar o cursor
-          ao clicar (em vez de travar a qualquer click no canvas). */}
+      {/* Gate de boas-vindas — fullscreen, só na PRIMEIRA entrada da sessão. */}
       {!locked && !temOverlay && !jaEntrou && (
         <div
-          data-jobverse-lock
+          onClick={() => travarPlayer()}
           className="absolute inset-0 z-20 flex items-center justify-center bg-bg-deep/70 backdrop-blur-sm cursor-pointer"
         >
           <div className="text-center px-8 py-6 border border-neon-cyan/30 rounded-xl bg-bg-panel/70 shadow-[0_0_40px_rgba(0,212,255,0.25)]">
@@ -256,7 +254,7 @@ export default function Feira() {
         <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-20 pointer-events-auto">
           <button
             type="button"
-            data-jobverse-lock
+            onClick={() => travarPlayer()}
             className="group inline-flex items-center gap-2 px-4 py-2 rounded-full border border-neon-cyan/40 bg-bg-panel/80 backdrop-blur text-text-bright hover:border-neon-cyan hover:shadow-[0_0_20px_rgba(0,212,255,0.4)] transition"
           >
             <MousePointerClick className="w-4 h-4 text-neon-cyan group-hover:scale-110 transition-transform" />

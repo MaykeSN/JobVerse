@@ -105,15 +105,18 @@ export default function PlayerControls({ onLockChange }: PlayerControlsProps) {
       <Mover />
       <ConectarHandle />
       {/*
-        - selector: lock só dispara clicando em [data-jobverse-lock] (gate
-          inicial + pill "Voltar pra feira"), evitando click no canvas
-          vazio ou em UI sobreposta acionar o lock acidentalmente.
-        - makeDefault: expõe esse controls em useThree(s => s.controls)
-          pro ConectarHandle registrar no singleton.
+        - selector dummy (`#__jobverse_no_auto_lock` nunca existe) faz o drei
+          NÃO instalar nenhum listener de click automático. O lock é sempre
+          chamado manualmente via `travarPlayer()` nos botões certos (gate
+          inicial e pill "Voltar pra feira"). Sem isso, o drei adicionava
+          listener em `document` (sem selector) ou em elementos que ainda
+          não existiam no momento do mount (com seletor real).
+        - makeDefault: expõe o controls em useThree(s => s.controls) pro
+          ConectarHandle registrar no singleton.
       */}
       <PointerLockControls
         makeDefault
-        selector="[data-jobverse-lock]"
+        selector="#__jobverse_no_auto_lock"
         onLock={() => onLockChange?.(true)}
         onUnlock={() => onLockChange?.(false)}
       />
