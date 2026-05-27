@@ -8,7 +8,9 @@ import { useAuth } from '../shared/auth';
 import { usePreset } from '../shared/graficos';
 import { useUI, useTemOverlayAberto } from '../shared/ui';
 import { useRave, useKonami } from '../shared/easter-eggs';
-import { tocarRave } from '../shared/audio';
+import { tocarRave, useAudio } from '../shared/audio';
+import { useGraficos, type Qualidade } from '../shared/graficos';
+import { useToast } from '../shared/toast';
 import { useContagensPorEmpresa } from '../shared/contagens';
 import { MousePointerClick } from 'lucide-react';
 import { useCallback } from 'react';
@@ -127,22 +129,63 @@ export default function Feira() {
     }
   }, [usuario, nome, navigate]);
 
-  // Atalho M — só pra dev logado, sem overlay aberto
+  // Atalhos de teclado — funcionam em ambos modos (lock e cursor livre)
+  // pra contornar a limitação de não poder clicar em UI durante o lock.
+  // Q: cicla qualidade · V: toggle áudio · L: sair · M: candidaturas (dev)
   useEffect(() => {
-    if (!usuario || usuario.tipo !== 'dev') return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key.toLowerCase() !== 'm') return;
-      if (temOverlay) return;
-      // Evita conflito quando o usuário está digitando em algum input
-      const target = e.target as HTMLElement | null;
-      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return;
-      e.preventDefault();
-      if (document.pointerLockElement) document.exitPointerLock();
-      abrirMinhasCandidaturas();
+    const SEQUENCIA_QUALIDADE: Qualidade[] = ['alta', 'media', 'baixa'];
+    const LABELS_QUALIDADE: Record<Qualidade, string> = {
+      alta: 'Alta',
+      media: 'Média',
+      baixa: 'Baixa'
     };
+
+    const handler = (e: KeyboardEvent) => {
+      // Não interfere se usuário está digitando em algum input
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+      // Ignora se modal aberto (M abre dev candidaturas, mas só sem overlay)
+      if (temOverlay) return;
+
+      const key = e.key.toLowerCase();
+
+      if (key === 'q') {
+        e.preventDefault();
+        const atual = useGraficos.getState().qualidade;
+        const prox =
+          SEQUENCIA_QUALIDADE[
+            (SEQUENCIA_QUALIDADE.indexOf(atual) + 1) % SEQUENCIA_QUALIDADE.length
+          ];
+        useGraficos.getState().setQualidade(prox);
+        useToast.getState().mostrar(`Qualidade: ${LABELS_QUALIDADE[prox]}`, 'info');
+      } else if (key === 'v') {
+        e.preventDefault();
+        useAudio.getState().toggle();
+        const ligado = useAudio.getState().habilitado;
+        useToast
+          .getState()
+          .mostrar(ligado ? 'Áudio ambiente ligado' : 'Áudio mutado', 'info');
+      } else if (key === 'l') {
+        e.preventDefault();
+        if (document.pointerLockElement) destravarPlayer();
+        navigate('/');
+      } else if (key === 'm' && usuario?.tipo === 'dev') {
+        e.preventDefault();
+        if (document.pointerLockElement) destravarPlayer();
+        abrirMinhasCandidaturas();
+      }
+    };
+
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [usuario, temOverlay, abrirMinhasCandidaturas]);
+  }, [usuario, temOverlay, abrirMinhasCandidaturas, navigate]);
 
   // Modal abriu → libera pointer lock. Modal fechou → re-trava após exit-animation
   // (pra eliminar o "delay de voltar a controlar" que o usuário sentia).
@@ -151,9 +194,7 @@ export default function Feira() {
   // fora de um handler de user gesture (setTimeout perde o contexto). O re-lock
   // acontece síncrono dentro do onClick do botão de fechar modal (handleFecharComLock).
   useEffect(() => {
-    if (temOverlay && document.pointerLockElement) {
-      destravarPlayer();
-    }
+    if (temOverlay && document.pointerLockElement) destravarPlayer();
   }, [temOverlay]);
 
   /**
@@ -171,10 +212,6 @@ export default function Feira() {
     if (locked && !jaEntrou) marcarEntrou();
   }, [locked, jaEntrou, marcarEntrou]);
 
-  // Debug — rastreia estado dos 3 sinalizadores críticos
-  useEffect(() => {
-    console.log('[PLOCK] estado Feira — locked:', locked, 'temOverlay:', temOverlay, 'jaEntrou:', jaEntrou);
-  }, [locked, temOverlay, jaEntrou]);
 
   // Konami code (↑↑↓↓←→←→BA) → rave mode 10s
   const rave = useRave((s) => s.ativo);
@@ -231,7 +268,7 @@ export default function Feira() {
       {/* Gate de boas-vindas — fullscreen, só na PRIMEIRA entrada da sessão. */}
       {!locked && !temOverlay && !jaEntrou && (
         <div
-          onClick={() => { console.log('[PLOCK] gate clicado'); travarPlayer(); }}
+          onClick={() => travarPlayer()}
           className="absolute inset-0 z-20 flex items-center justify-center bg-bg-deep/70 backdrop-blur-sm cursor-pointer"
         >
           <div className="text-center px-8 py-6 border border-neon-cyan/30 rounded-xl bg-bg-panel/70 shadow-[0_0_40px_rgba(0,212,255,0.25)]">
@@ -249,7 +286,7 @@ export default function Feira() {
         <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-20 pointer-events-auto">
           <button
             type="button"
-            onClick={() => { console.log('[PLOCK] pill clicado'); travarPlayer(); }}
+            onClick={() => travarPlayer()}
             className="group inline-flex items-center gap-2 px-4 py-2 rounded-full border border-neon-cyan/40 bg-bg-panel/80 backdrop-blur text-text-bright hover:border-neon-cyan hover:shadow-[0_0_20px_rgba(0,212,255,0.4)] transition"
           >
             <MousePointerClick className="w-4 h-4 text-neon-cyan group-hover:scale-110 transition-transform" />

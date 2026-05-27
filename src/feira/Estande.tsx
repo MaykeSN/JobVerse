@@ -62,7 +62,6 @@ export default function Estande({ empresa, contagens }: EstandeProps) {
 
   const handleClick = (e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation();
-    console.log('[PLOCK] handleClick estande', empresa.slug);
     tocarClick();
     destravarPlayer();
     abrirEmpresa(empresa);
