@@ -1,25 +1,36 @@
 import { useMemo, useRef, useState } from 'react';
-import { Float, Sparkles, Text } from '@react-three/drei';
+import { Float, Html, Sparkles, Text } from '@react-three/drei';
 import { useFrame, type ThreeEvent } from '@react-three/fiber';
-import { Vector3, type Mesh, type MeshBasicMaterial } from 'three';
+import { Vector3, type Mesh, type MeshBasicMaterial, type MeshStandardMaterial } from 'three';
 import type { Empresa } from '../shared/tipos';
 import { usePreset } from '../shared/graficos';
+import { useGraficos } from '../shared/graficos';
 import { useUI } from '../shared/ui';
+import { tocarClick } from '../shared/audio';
+import { destravarPlayer } from './PlayerControls';
 import DwellTracker from './DwellTracker';
 
 interface EstandeProps {
   empresa: Empresa;
+  contagens?: { vagas: number; candidatos: number };
 }
 
 const SPAWN = new Vector3(0, 0, 0);
 
-export default function Estande({ empresa }: EstandeProps) {
+export default function Estande({ empresa, contagens }: EstandeProps) {
   const { posicao, cor, nome, missao, stack } = empresa;
   const preset = usePreset();
+  const qualidade = useGraficos((s) => s.qualidade);
   const abrirEmpresa = useUI((s) => s.abrirEmpresa);
 
   const [dentro, setDentro] = useState(false);
   const anelRef = useRef<Mesh>(null);
+  const orbitalRef = useRef<Mesh>(null);
+  const pilarMatRefs = useRef<MeshStandardMaterial[]>([]);
+
+  const setPilarRef = (i: number) => (m: MeshStandardMaterial | null) => {
+    if (m) pilarMatRefs.current[i] = m;
+  };
 
   // Estande olha pra praça central — calculamos yaw uma vez
   const yaw = useMemo(() => {
@@ -30,28 +41,38 @@ export default function Estande({ empresa }: EstandeProps) {
 
   const tags = stack.slice(0, 4);
 
-  // Pulsa o anel quando o player está dentro (feedback visual do dwell)
-  useFrame(({ clock }) => {
-    if (!anelRef.current) return;
-    const material = anelRef.current.material as MeshBasicMaterial;
-    if (dentro) {
-      const t = clock.elapsedTime;
-      material.opacity = 0.6 + Math.sin(t * 4) * 0.4;
-    } else {
-      material.opacity = 1;
+  // Anel pulsa quando dentro, anel orbital sempre girando, pilares respiram (qualidade alta)
+  useFrame(({ clock }, delta) => {
+    if (anelRef.current) {
+      const material = anelRef.current.material as MeshBasicMaterial;
+      material.opacity = dentro ? 0.6 + Math.sin(clock.elapsedTime * 4) * 0.4 : 1;
+    }
+    if (orbitalRef.current) {
+      orbitalRef.current.rotation.z += delta * (dentro ? 0.9 : 0.35);
+    }
+    if (qualidade === 'alta') {
+      const base = 1.2;
+      const amp = dentro ? 0.7 : 0.4;
+      pilarMatRefs.current.forEach((m, i) => {
+        if (!m) return;
+        m.emissiveIntensity = base + Math.sin(clock.elapsedTime * 1.6 + i * 1.4) * amp;
+      });
     }
   });
 
   const handleClick = (e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation();
+    tocarClick();
+    destravarPlayer();
     abrirEmpresa(empresa);
   };
 
   return (
     <group position={posicao} rotation={[0, yaw, 0]}>
-      {/* Base circular reflexiva — também é o hitbox de click do estande */}
+      {/* Base hexagonal reflexiva — hitbox principal de click */}
       <mesh
         position={[0, 0.05, 0]}
+        rotation={[0, Math.PI / 6, 0]}
         receiveShadow
         onClick={handleClick}
         onPointerOver={(e) => {
@@ -62,7 +83,7 @@ export default function Estande({ empresa }: EstandeProps) {
           document.body.style.cursor = '';
         }}
       >
-        <cylinderGeometry args={[2, 2, 0.1, 48]} />
+        <cylinderGeometry args={[2, 2, 0.15, 6]} />
         <meshStandardMaterial
           color="#0B0D1A"
           emissive={cor}
@@ -70,6 +91,12 @@ export default function Estande({ empresa }: EstandeProps) {
           metalness={0.9}
           roughness={0.2}
         />
+      </mesh>
+
+      {/* Anel orbital girando — vibe sci-fi */}
+      <mesh ref={orbitalRef} position={[0, 1.6, 0]} rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[2.55, 0.035, 8, 64]} />
+        <meshBasicMaterial color={cor} transparent opacity={0.75} toneMapped={false} />
       </mesh>
 
       {/* Anel de luz no chão (pulsa quando dentro) */}
@@ -83,11 +110,12 @@ export default function Estande({ empresa }: EstandeProps) {
         <meshBasicMaterial color={cor} transparent />
       </mesh>
 
-      {/* Pilares laterais — vibe portal */}
-      {[-1.7, 1.7].map((x) => (
+      {/* Pilares laterais — vibe portal, com pulsing em qualidade alta */}
+      {[-1.7, 1.7].map((x, i) => (
         <mesh key={x} position={[x, 1.8, 0]} castShadow onClick={handleClick}>
           <boxGeometry args={[0.18, 3.6, 0.18]} />
           <meshStandardMaterial
+            ref={setPilarRef(i)}
             color={cor}
             emissive={cor}
             emissiveIntensity={1.4}
@@ -178,6 +206,39 @@ export default function Estande({ empresa }: EstandeProps) {
 
       {preset.pointLightEstande && (
         <pointLight position={[0, 2.5, 0]} color={cor} intensity={dentro ? 2.4 : 1.6} distance={6} />
+      )}
+
+      {/* Pin flutuante: nº de vagas + nº de candidatos */}
+      {contagens && (
+        <Html
+          position={[0, 4.6, 0]}
+          center
+          distanceFactor={9}
+          zIndexRange={[20, 0]}
+          style={{ pointerEvents: 'none', userSelect: 'none' }}
+        >
+          <div
+            className="px-3 py-1.5 rounded-full bg-bg-deep/85 backdrop-blur border whitespace-nowrap"
+            style={{
+              borderColor: `${cor}66`,
+              boxShadow: `0 0 14px ${cor}44, inset 0 1px 0 0 rgba(255,255,255,0.05)`
+            }}
+          >
+            <span className="font-display text-[11px] font-bold" style={{ color: cor }}>
+              {contagens.vagas}
+            </span>
+            <span className="text-[10px] uppercase tracking-widest text-text-dim ml-1">
+              {contagens.vagas === 1 ? 'vaga' : 'vagas'}
+            </span>
+            <span className="text-text-dim/40 mx-2">·</span>
+            <span className="font-display text-[11px] font-bold text-text-bright">
+              {contagens.candidatos}
+            </span>
+            <span className="text-[10px] uppercase tracking-widest text-text-dim ml-1">
+              {contagens.candidatos === 1 ? 'candidato' : 'candidatos'}
+            </span>
+          </div>
+        </Html>
       )}
 
       {/* DwellTracker — registra visita quando jogador fica >= 2s no raio */}

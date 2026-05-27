@@ -9,6 +9,32 @@ import { Vector3 } from 'three';
 
 type Movement = 'forward' | 'back' | 'left' | 'right' | 'run';
 
+/**
+ * Singleton handle pro controls do drei. Setado quando o componente monta
+ * (via useThree dentro do Canvas) e usado por código fora do Canvas que
+ * precisa trancar/destrancar o cursor programaticamente.
+ *
+ * Importante: usar `lock()` do drei (que ativa os listeners de mousemove
+ * pra rotação da câmera) em vez de `document.body.requestPointerLock()`
+ * direto — caso contrário o cursor trava mas a câmera não vira.
+ */
+interface ControlsHandle {
+  lock(): void;
+  unlock(): void;
+}
+
+let handle: ControlsHandle | null = null;
+
+export function travarPlayer() {
+  if (handle) handle.lock();
+  else document.body.requestPointerLock();
+}
+
+export function destravarPlayer() {
+  if (handle) handle.unlock();
+  else if (document.pointerLockElement) document.exitPointerLock();
+}
+
 const KEY_MAP = [
   { name: 'forward', keys: ['KeyW', 'ArrowUp'] },
   { name: 'back', keys: ['KeyS', 'ArrowDown'] },
@@ -37,6 +63,10 @@ function Mover() {
     } else {
       camera.position.y = PLAYER_HEIGHT;
     }
+
+    // Não move sem pointer lock — evita câmera andar sozinha quando o user
+    // tá interagindo com UI (seletor de qualidade, audio, modais).
+    if (!document.pointerLockElement) return;
 
     const { forward, back, left, right, run } = get();
     if (!forward && !back && !left && !right) return;
@@ -74,12 +104,42 @@ export default function PlayerControls({ onLockChange }: PlayerControlsProps) {
   return (
     <KeyboardControls map={map}>
       <Mover />
+      <ConectarHandle />
+      {/*
+        - selector dummy (`#__jobverse_no_auto_lock` nunca existe) faz o drei
+          NÃO instalar nenhum listener de click automático. O lock é sempre
+          chamado manualmente via `travarPlayer()` nos botões certos (gate
+          inicial e pill "Voltar pra feira"). Sem isso, o drei adicionava
+          listener em `document` (sem selector) ou em elementos que ainda
+          não existiam no momento do mount (com seletor real).
+        - makeDefault: expõe o controls em useThree(s => s.controls) pro
+          ConectarHandle registrar no singleton.
+      */}
       <PointerLockControls
+        makeDefault
+        selector="#__jobverse_no_auto_lock"
         onLock={() => onLockChange?.(true)}
         onUnlock={() => onLockChange?.(false)}
       />
     </KeyboardControls>
   );
+}
+
+/**
+ * Componente interno que vive DENTRO do Canvas pra acessar `useThree`
+ * e registrar o controls do drei num singleton externo.
+ */
+function ConectarHandle() {
+  const controls = useThree((s) => s.controls) as unknown as ControlsHandle | null;
+  useEffect(() => {
+    if (controls && typeof controls.lock === 'function' && typeof controls.unlock === 'function') {
+      handle = controls;
+    }
+    return () => {
+      handle = null;
+    };
+  }, [controls]);
+  return null;
 }
 
 /**

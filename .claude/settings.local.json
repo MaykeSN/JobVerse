@@ -10,9 +10,12 @@
       "Bash(git commit -m ' *)",
       "Bash(git remote *)",
       "Bash(git push *)",
-      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\samuel.macena\\\\JobVerse\\\\src\" -Recurse -Include \"*.ts\", \"*.tsx\")",
-      "Bash(Select-Object FullName)",
-      "Bash(npx tsc *)"
+      "Bash(git rm *)",
+      "Bash(git commit *)",
+      "Bash(curl -s 'https://aygsmrlqhapwourgwylz.supabase.co/rest/v1/companies?select=slug,nome,cor&order=slug' -H 'apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF5Z3NtcmxxaGFwd291cmd3eWx6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4MDI1MzEsImV4cCI6MjA5NTM3ODUzMX0.6an6fPPWm3mxjnqyNM_6_TMwJw5gLScqoskXbvGtgCk' -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF5Z3NtcmxxaGFwd291cmd3eWx6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4MDI1MzEsImV4cCI6MjA5NTM3ODUzMX0.6an6fPPWm3mxjnqyNM_6_TMwJw5gLScqoskXbvGtgCk')",
+      "Bash(curl -s 'https://aygsmrlqhapwourgwylz.supabase.co/rest/v1/companies?select=*&limit=1' -H 'apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF5Z3NtcmxxaGFwd291cmd3eWx6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4MDI1MzEsImV4cCI6MjA5NTM3ODUzMX0.6an6fPPWm3mxjnqyNM_6_TMwJw5gLScqoskXbvGtgCk')",
+      "Bash(curl -s 'https://aygsmrlqhapwourgwylz.supabase.co/rest/v1/companies?select=slug,nome,cor_tema&order=slug' -H 'apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF5Z3NtcmxxaGFwd291cmd3eWx6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4MDI1MzEsImV4cCI6MjA5NTM3ODUzMX0.6an6fPPWm3mxjnqyNM_6_TMwJw5gLScqoskXbvGtgCk' -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF5Z3NtcmxxaGFwd291cmd3eWx6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4MDI1MzEsImV4cCI6MjA5NTM3ODUzMX0.6an6fPPWm3mxjnqyNM_6_TMwJw5gLScqoskXbvGtgCk')",
+      "Bash(curl -s https://aygsmrlqhapwourgwylz.supabase.co/rest/v1/jobs?select=company_id,titulo,senioridade -H 'apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF5Z3NtcmxxaGFwd291cmd3eWx6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4MDI1MzEsImV4cCI6MjA5NTM3ODUzMX0.6an6fPPWm3mxjnqyNM_6_TMwJw5gLScqoskXbvGtgCk' -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF5Z3NtcmxxaGFwd291cmd3eWx6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4MDI1MzEsImV4cCI6MjA5NTM3ODUzMX0.6an6fPPWm3mxjnqyNM_6_TMwJw5gLScqoskXbvGtgCk')"
     ]
   }
 }

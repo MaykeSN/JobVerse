@@ -476,30 +476,57 @@ Cada empresa precisa:
 - [ ] Swap mock → Supabase (quando schema/seed aplicados no projeto Supabase real)
 
 ### Fase 5 — Painel recrutador
-- [ ] Rota /recrutador/:slug lendo param
-- [ ] Header com cor/logo dinâmicos
-- [ ] Card de CVs com subscribe realtime
-- [ ] Card de visitas com recharts BarChart
-- [ ] Card "Análise IA — em breve" estilizado (blur + sparkles)
-- [ ] Edge Function `ai-summary` stub deployada
-- [ ] Background tsParticles sutil
-- [ ] Animação stagger de entrada (framer-motion)
+- [x] Rota `/recrutador/:slug` com layout grid 60/40 (lista + sidebar)
+- [x] Header com cor/logo dinâmicos + missão da empresa
+- [x] `<IndicadorAoVivo />` pulsante verde lima no header
+- [x] `<ListaCVs />` realtime — pega 5 mock + "Você" no topo (se candidatou) + chegadas via BroadcastChannel
+- [x] Card de CV: avatar com inicial, nome, "há X min", vaga (badge), skills (chips), sobre truncado, github, slot IA `—`
+- [x] Highlight pulsante neon nos CVs "novos" por 5s
+- [x] `<Heatmap />` BarChart horizontal recharts — Top 5 por dwell time na cor da empresa
+- [x] `<IAEmBreve />` extraído pra componente — gradient roxo+ciano + sparkles + botão desabilitado
+- [x] `<ParticulasBg densidade="baixa" />` sutil
+- [x] Animação stagger framer-motion na entrada
+- [x] Banco mock `src/feira/candidatos-mock.ts` — 26 candidatos brasileiros pelas 5 empresas
+- [x] `src/shared/realtime.ts` — wrapper BroadcastChannel cross-tab
+- [x] `registrarCandidatura`/`registrarVisita` emitem events realtime
+- [ ] Edge Function `ai-summary` stub deployada *(manual — quando Supabase aplicado)*
 
 ### Fase 6 — Polimento visual
-- [ ] Substituir primitivos por GLTF (Quaternius / Kenney / Poly Pizza)
-- [ ] Áudio ambiente lo-fi + sfx click
-- [ ] Vídeos curtos das empresas em planes na cena
-- [ ] Glitch effect ocasional no logo (postprocessing)
-- [ ] Easter egg (1–2)
-- [ ] Loading screen com progress bar custom
-- [ ] Teste cross-browser (Chrome, Firefox, Edge)
-- [ ] FPS check (alvo: 60fps em laptop médio)
+- [ ] Substituir primitivos por GLTF (Quaternius / Kenney / Poly Pizza) *(pulado — estandes atuais já bonitos, risco alto)*
+- [x] Áudio ambiente sintetizado (Web Audio drone 3 osciladores + LFO) — `src/shared/audio.ts`
+- [x] SFX click (square 880Hz) + sucesso (triangle 880→1320Hz) + rave (arpejo C-E-G-C5)
+- [x] `<ToggleAudio />` no canto pra ligar/desligar (persistido)
+- [ ] Vídeos curtos das empresas em planes na cena *(pulado — sem assets reais)*
+- [x] Glitch animation aplicada no logo JOBVERSE (Landing + LoadingScreen)
+- [x] Easter egg: Konami code (↑↑↓↓←→←→BA) ativa **rave mode** 10s — bloom 2x, sparkles 1.5x cor magenta, screen strobe radial + badge animado + sfx arpejo
+- [x] Loading screen com progress bar customizada (gradient cyan→magenta) usando `useProgress` do drei + logo glitch
+- [ ] Teste cross-browser (Chrome, Firefox, Edge) *(manual)*
+- [ ] FPS check (alvo: 60fps em laptop médio) *(manual)*
+
+### Fase 8 — Autenticação simples (adicionada pós-MVP)
+- [x] Schema `supabase/users.sql` — tabela `users` (github, hash, salt, tipo, empresa_slug) + `candidates.user_id`
+- [x] `src/shared/hash.ts` — PBKDF2 SHA-256 100k iters via Web Crypto (sem dep externa)
+- [x] `src/shared/auth.ts` — store zustand `useAuth`, persistência seletiva (sem hash/salt no localStorage), mensagens PT-BR
+- [x] `src/components/AuthModal.tsx` — tabs Entrar/Cadastrar, radio dev/recrutador, dropdown empresa colorido
+- [x] `src/components/MinhasCandidaturasModal.tsx` — atalho `M` lista candidaturas do dev (DB + fallback local)
+- [x] `src/shared/candidato.ts` — adicionado `userId`, plugado em registrarCandidatura
+- [x] `src/routes/Landing.tsx` — refatorada com 2 botões grandes "Sou dev" / "Sou recrutador", card de usuário logado
+- [x] `src/routes/Feira.tsx` — listener tecla M (só dev) + guard de rota
+- [x] `src/routes/Recrutador.tsx` — guard de acesso por `empresa_slug` + badge "modo demo" pra anônimo
+- [x] `docs/setup-supabase.md` — passo 4.1 aplicar users.sql
+- [ ] Aplicar `supabase/users.sql` no SQL Editor *(manual)*
+- [ ] RLS de produção (users vê só próprio registro; recrutador vê só applications da empresa) *(roadmap)*
 
 ### Fase 7 — Entrega
-- [ ] README completo (pitch, stack, como rodar, screenshots, declaração IA, créditos, roadmap)
-- [ ] `docs/declaracao-ia.md` listando Claude + outras ferramentas IA
-- [ ] Slides PDF (8–10 slides, mesma paleta do produto)
-- [ ] Vídeo-pitch 5min no YouTube (não listado)
+- [x] README completo (pitch, stack, como rodar, declaração IA, créditos, roadmap, encaixe nos critérios)
+- [x] `docs/declaracao-ia.md` listando Claude + tabela de uso por área
+- [x] `docs/roteiro-pitch.md` — roteiro 5min estruturado em 5 blocos
+- [x] `docs/slides-outline.md` — 10 slides em markdown com paleta e layout
+- [x] `vercel.json` — config de SPA + cache headers
+- [ ] Exportar slides em PDF (manual — usar outline em Canva/Figma/Google Slides)
+- [ ] Gravar vídeo-pitch 5min no YouTube não listado (manual — seguir roteiro)
+- [ ] Tirar screenshots/GIFs e colocar no README (manual)
+- [ ] Deploy Vercel (manual — conectar repo + adicionar env vars)
 - [ ] Link de produção testado + funcionando
 - [ ] Submissão no formulário oficial iRede
 

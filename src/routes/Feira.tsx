@@ -1,17 +1,34 @@
 import { Suspense, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Canvas } from '@react-three/fiber';
 import { Line, MeshReflectorMaterial, Sparkles, Environment } from '@react-three/drei';
 import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing';
 import { useCandidato } from '../shared/candidato';
+import { useAuth } from '../shared/auth';
 import { usePreset } from '../shared/graficos';
 import { useUI, useTemOverlayAberto } from '../shared/ui';
+import { useRave, useKonami } from '../shared/easter-eggs';
+import { tocarRave, useAudio } from '../shared/audio';
+import { useGraficos, type Qualidade } from '../shared/graficos';
+import { useToast } from '../shared/toast';
+import { useContagensPorEmpresa } from '../shared/contagens';
+import { MousePointerClick } from 'lucide-react';
+import { useCallback } from 'react';
+import ToggleAudio from '../components/ToggleAudio';
+import RaveOverlay from '../components/RaveOverlay';
+import LoadingScreen from '../components/LoadingScreen';
+import ControlesHUD from '../components/ControlesHUD';
 import { empresas } from '../feira/empresas';
 import Estande from '../feira/Estande';
-import PlayerControls, { usePointerLockState } from '../feira/PlayerControls';
+import PlayerControls, {
+  usePointerLockState,
+  travarPlayer,
+  destravarPlayer
+} from '../feira/PlayerControls';
 import SeletorQualidade from '../components/SeletorQualidade';
 import ModalVagas from '../components/ModalVagas';
 import ModalCV from '../components/ModalCV';
+import MinhasCandidaturasModal from '../components/MinhasCandidaturasModal';
 import Toast from '../components/Toast';
 
 function Piso() {
@@ -77,9 +94,11 @@ function PracaCentral() {
 }
 
 export default function Feira() {
+  const navigate = useNavigate();
   const nome = useCandidato((s) => s.nome);
   const visitadas = useCandidato((s) => s.visitadas);
   const candidaturas = useCandidato((s) => s.candidaturas);
+  const usuario = useAuth((s) => s.usuario);
   const locked = usePointerLockState();
   const preset = usePreset();
 
@@ -87,14 +106,125 @@ export default function Feira() {
   const vagaSelecionada = useUI((s) => s.vagaSelecionada);
   const fecharEmpresa = useUI((s) => s.fecharEmpresa);
   const fecharCV = useUI((s) => s.fecharCV);
+  const jaEntrou = useUI((s) => s.jaEntrou);
+  const marcarEntrou = useUI((s) => s.marcarEntrou);
+  const abrirMinhasCandidaturas = useUI((s) => s.abrirMinhasCandidaturas);
   const temOverlay = useTemOverlayAberto();
+  const contagens = useContagensPorEmpresa();
 
-  // Quando um modal abre, libera o pointer lock pra não conflitar com o mouse no DOM
+  // Guard de rota — recrutador logado vai direto pro próprio painel; nome
+  // local (`nome`) também conta como "sessão dev anônima" e tem acesso.
   useEffect(() => {
-    if (temOverlay && document.pointerLockElement) {
-      document.exitPointerLock();
+    if (usuario?.tipo === 'recrutador') {
+      if (usuario.empresaSlug) {
+        navigate(`/recrutador/${usuario.empresaSlug}`);
+      } else {
+        navigate('/recrutador');
+      }
+      return;
     }
+    // Não logado E sem candidato local → volta pra landing
+    if (!usuario && !nome) {
+      navigate('/');
+    }
+  }, [usuario, nome, navigate]);
+
+  // Atalhos de teclado — funcionam em ambos modos (lock e cursor livre)
+  // pra contornar a limitação de não poder clicar em UI durante o lock.
+  // Q: cicla qualidade · V: toggle áudio · L: sair · M: candidaturas (dev)
+  useEffect(() => {
+    const SEQUENCIA_QUALIDADE: Qualidade[] = ['alta', 'media', 'baixa'];
+    const LABELS_QUALIDADE: Record<Qualidade, string> = {
+      alta: 'Alta',
+      media: 'Média',
+      baixa: 'Baixa'
+    };
+
+    const handler = (e: KeyboardEvent) => {
+      // Não interfere se usuário está digitando em algum input
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+      // Ignora se modal aberto (M abre dev candidaturas, mas só sem overlay)
+      if (temOverlay) return;
+
+      const key = e.key.toLowerCase();
+
+      if (key === 'q') {
+        e.preventDefault();
+        const atual = useGraficos.getState().qualidade;
+        const prox =
+          SEQUENCIA_QUALIDADE[
+            (SEQUENCIA_QUALIDADE.indexOf(atual) + 1) % SEQUENCIA_QUALIDADE.length
+          ];
+        useGraficos.getState().setQualidade(prox);
+        useToast.getState().mostrar(`Qualidade: ${LABELS_QUALIDADE[prox]}`, 'info');
+      } else if (key === 'v') {
+        e.preventDefault();
+        useAudio.getState().toggle();
+        const ligado = useAudio.getState().habilitado;
+        useToast
+          .getState()
+          .mostrar(ligado ? 'Áudio ambiente ligado' : 'Áudio mutado', 'info');
+      } else if (key === 'l') {
+        e.preventDefault();
+        if (document.pointerLockElement) destravarPlayer();
+        navigate('/');
+      } else if (key === 'm' && usuario?.tipo === 'dev') {
+        e.preventDefault();
+        if (document.pointerLockElement) destravarPlayer();
+        abrirMinhasCandidaturas();
+      }
+    };
+
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [usuario, temOverlay, abrirMinhasCandidaturas, navigate]);
+
+  // Modal abriu → libera pointer lock. Modal fechou → re-trava após exit-animation
+  // (pra eliminar o "delay de voltar a controlar" que o usuário sentia).
+  // Quando um modal abre, libera o pointer lock pra não conflitar com mouse no DOM.
+  // O re-lock NÃO é feito aqui — o browser bloqueia requestPointerLock() chamado
+  // fora de um handler de user gesture (setTimeout perde o contexto). O re-lock
+  // acontece síncrono dentro do onClick do botão de fechar modal (handleFecharComLock).
+  useEffect(() => {
+    if (temOverlay && document.pointerLockElement) destravarPlayer();
   }, [temOverlay]);
+
+  /**
+   * Wrapper que fecha um overlay E re-trava o cursor no MESMO event tick,
+   * preservando o user-activation gesture pro browser autorizar o
+   * requestPointerLock. Usado nos `onFechar` dos modais.
+   */
+  const fecharComLock = (fn: () => void) => () => {
+    fn();
+    if (jaEntrou) travarPlayer();
+  };
+
+  // Marca que o usuário já entrou ao menos uma vez (gate fullscreen só na 1ª)
+  useEffect(() => {
+    if (locked && !jaEntrou) marcarEntrou();
+  }, [locked, jaEntrou, marcarEntrou]);
+
+
+  // Konami code (↑↑↓↓←→←→BA) → rave mode 10s
+  const rave = useRave((s) => s.ativo);
+  const ativarRave = useRave((s) => s.ativar);
+  const triggerRave = useCallback(() => {
+    ativarRave(10000);
+    tocarRave();
+  }, [ativarRave]);
+  useKonami(triggerRave);
+
+  // Amplificadores durante o rave
+  const sparklesCount = Math.round(preset.sparklesAmbiente * (rave ? 1.5 : 1));
+  const bloomIntensity = preset.bloomIntensity * (rave ? 2 : 1);
 
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-bg-deep">
@@ -121,14 +251,12 @@ export default function Feira() {
         </Link>
       </div>
 
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
-        <p className="text-[10px] uppercase tracking-[0.3em] text-text-muted">
-          WASD + mouse · Shift pra correr · Clique num estande pra ver vagas · ESC pra sair
-        </p>
-      </div>
+      {/* HUD de controles estilo gamepad — só quando em jogo (lock + sem overlay) */}
+      {locked && !temOverlay && <ControlesHUD mostrarM={usuario?.tipo === 'dev'} />}
 
       {/* Seletor de qualidade gráfica — sempre visível, fora do gate */}
       <SeletorQualidade posicao="bottom-left" />
+      <ToggleAudio posicao="bottom-right" />
 
       {/* Crosshair sutil quando em FPS (e sem overlay) */}
       {locked && !temOverlay && (
@@ -137,16 +265,36 @@ export default function Feira() {
         </div>
       )}
 
-      {/* Gate de entrada — overlay HTML enquanto pointer não-locked E sem modal aberto */}
-      {!locked && !temOverlay && (
-        <div className="absolute inset-0 z-20 flex items-center justify-center bg-bg-deep/70 backdrop-blur-sm">
+      {/* Gate de boas-vindas — fullscreen, só na PRIMEIRA entrada da sessão. */}
+      {!locked && !temOverlay && !jaEntrou && (
+        <div
+          onClick={() => travarPlayer()}
+          className="absolute inset-0 z-20 flex items-center justify-center bg-bg-deep/70 backdrop-blur-sm cursor-pointer"
+        >
           <div className="text-center px-8 py-6 border border-neon-cyan/30 rounded-xl bg-bg-panel/70 shadow-[0_0_40px_rgba(0,212,255,0.25)]">
             <p className="text-[10px] uppercase tracking-[0.4em] text-text-dim">JobVerse</p>
             <p className="font-display text-3xl text-glow-cyan mt-2">Clique pra entrar</p>
             <p className="text-sm text-text-dim mt-3">
-              WASD + mouse pra mover · Shift pra correr · ESC pra liberar o cursor
+              WASD + mouse pra mover · Shift pra correr · ESC libera o cursor
             </p>
           </div>
+        </div>
+      )}
+
+      {/* Cursor livre depois da 1ª entrada — pill discreto pra retomar */}
+      {!locked && !temOverlay && jaEntrou && (
+        <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-20 pointer-events-auto">
+          <button
+            type="button"
+            onClick={() => travarPlayer()}
+            className="group inline-flex items-center gap-2 px-4 py-2 rounded-full border border-neon-cyan/40 bg-bg-panel/80 backdrop-blur text-text-bright hover:border-neon-cyan hover:shadow-[0_0_20px_rgba(0,212,255,0.4)] transition"
+          >
+            <MousePointerClick className="w-4 h-4 text-neon-cyan group-hover:scale-110 transition-transform" />
+            <span className="text-[10px] uppercase tracking-[0.25em] text-text-dim">
+              Cursor livre ·
+            </span>
+            <span className="font-display text-sm text-glow-cyan">Voltar pra feira</span>
+          </button>
         </div>
       )}
 
@@ -163,16 +311,16 @@ export default function Feira() {
           <PracaCentral />
           <LinhasNeon />
           {empresas.map((e) => (
-            <Estande key={e.slug} empresa={e} />
+            <Estande key={e.slug} empresa={e} contagens={contagens[e.slug]} />
           ))}
-          {/* Sparkles ambiente — quantidade depende da qualidade */}
+          {/* Sparkles ambiente — quantidade depende da qualidade (1.5x no rave) */}
           <Sparkles
-            count={preset.sparklesAmbiente}
+            count={sparklesCount}
             scale={[40, 8, 40]}
             position={[0, 4, 0]}
             size={2}
-            speed={0.2}
-            color="#00D4FF"
+            speed={rave ? 0.6 : 0.2}
+            color={rave ? '#FF4B91' : '#00D4FF'}
           />
           <Environment preset="night" />
         </Suspense>
@@ -182,7 +330,7 @@ export default function Feira() {
         {preset.bloom && (
           <EffectComposer>
             <Bloom
-              intensity={preset.bloomIntensity}
+              intensity={bloomIntensity}
               luminanceThreshold={0.25}
               luminanceSmoothing={0.9}
               mipmapBlur
@@ -196,10 +344,15 @@ export default function Feira() {
         )}
       </Canvas>
 
-      {/* Overlays HTML — modais + toast */}
-      <ModalVagas empresa={empresaAberta} onFechar={fecharEmpresa} />
-      <ModalCV vaga={vagaSelecionada} empresa={empresaAberta} onFechar={fecharCV} />
+      {/* Overlays HTML — modais + toast + rave + loading.
+          fecharComLock re-trava o cursor no MESMO tick do click → preserva
+          user gesture pro browser autorizar requestPointerLock. */}
+      <ModalVagas empresa={empresaAberta} onFechar={fecharComLock(fecharEmpresa)} />
+      <ModalCV vaga={vagaSelecionada} empresa={empresaAberta} onFechar={fecharComLock(fecharCV)} />
+      <MinhasCandidaturasModal />
       <Toast />
+      <RaveOverlay />
+      <LoadingScreen />
     </div>
   );
 }

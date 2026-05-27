@@ -4,7 +4,7 @@ import { X, Send, Github, Sparkles } from 'lucide-react';
 import type { Empresa, Vaga } from '../shared/tipos';
 import { useCandidato } from '../shared/candidato';
 import { useToast } from '../shared/toast';
-import * as db from '../shared/db';
+import { tocarSucesso } from '../shared/audio';
 
 interface Props {
   vaga: Vaga | null;
@@ -88,8 +88,7 @@ export default function ModalCV({ vaga, empresa, onFechar }: Props) {
 
     salvarCV({ skills, sobre: sobre.trim(), github: github.trim() });
     registrarCandidatura(vaga.id);
-    const { id } = useCandidato.getState();
-    if (id) db.syncCandidatura(id, skills, sobre.trim(), github.trim(), vaga, empresa);
+    tocarSucesso();
     mostrarToast(`CV entregue pra ${empresa.nome}. Boa sorte!`, 'sucesso');
     onFechar();
   };
