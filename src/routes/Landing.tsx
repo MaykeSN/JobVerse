@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowRight, Sparkles } from 'lucide-react';
+import { ArrowRight, Sparkles, Briefcase } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import ParticulasBg from '../shared/ParticulasBg';
 import { useCandidato } from '../shared/candidato';
 import SeletorQualidade from '../components/SeletorQualidade';
@@ -25,6 +26,17 @@ export default function Landing() {
       <ParticulasBg />
       <SeletorQualidade posicao="bottom-right" />
       <ToggleAudio posicao="top-right" />
+
+      {/* Atalho pro painel B2B (recrutador) */}
+      <Link
+        to="/recrutador"
+        className="absolute top-4 left-4 z-30 inline-flex items-center gap-2 px-3 py-2 rounded-full border border-neon-magenta/30 bg-bg-panel/80 backdrop-blur text-text-bright hover:border-neon-magenta hover:shadow-[0_0_18px_rgba(255,75,145,0.4)] transition group"
+      >
+        <Briefcase className="w-4 h-4 text-neon-magenta" />
+        <span className="text-[10px] uppercase tracking-[0.25em] text-text-dim group-hover:text-text-bright transition">
+          Sou recrutador
+        </span>
+      </Link>
 
       <motion.div
         initial={{ opacity: 0, y: 24 }}
