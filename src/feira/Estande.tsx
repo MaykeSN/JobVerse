@@ -62,10 +62,8 @@ export default function Estande({ empresa, contagens }: EstandeProps) {
 
   const handleClick = (e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation();
+    console.log('[PLOCK] handleClick estande', empresa.slug);
     tocarClick();
-    // Libera via destravarPlayer() (que avisa o drei do unlock) em vez de
-    // exitPointerLock() direto — mantém o estado interno do controles
-    // sincronizado pra quando o cursor voltar a travar.
     destravarPlayer();
     abrirEmpresa(empresa);
   };

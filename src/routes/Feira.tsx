@@ -150,25 +150,25 @@ export default function Feira() {
   useEffect(() => {
     const era = overlayAnteriorRef.current;
     overlayAnteriorRef.current = temOverlay;
+    console.log('[PLOCK] useEffect overlay — era:', era, 'agora:', temOverlay, 'jaEntrou:', jaEntrou, 'pointerLockEl:', !!document.pointerLockElement);
 
     if (temOverlay && document.pointerLockElement) {
+      console.log('[PLOCK] overlay abriu — destravar');
       destravarPlayer();
       return;
     }
 
     if (era && !temOverlay && jaEntrou && !document.pointerLockElement) {
+      console.log('[PLOCK] overlay fechou — agendar re-lock em 180ms');
       const t = window.setTimeout(() => {
-        // Safety: outro overlay pode ter aberto durante o delay
         const ui = useUI.getState();
         const ainda =
           ui.empresaAberta !== null ||
           ui.vagaSelecionada !== null ||
           ui.authModal !== false ||
           ui.minhasCandidaturasAberto;
+        console.log('[PLOCK] timeout disparou — algum overlay ainda?', ainda);
         if (!ainda && !document.pointerLockElement) {
-          // Importante: usar travarPlayer() em vez de requestPointerLock()
-          // direto — o drei precisa ativar os listeners de mousemove pra
-          // a câmera voltar a rotacionar.
           travarPlayer();
         }
       }, 180);
@@ -180,6 +180,11 @@ export default function Feira() {
   useEffect(() => {
     if (locked && !jaEntrou) marcarEntrou();
   }, [locked, jaEntrou, marcarEntrou]);
+
+  // Debug — rastreia estado dos 3 sinalizadores críticos
+  useEffect(() => {
+    console.log('[PLOCK] estado Feira — locked:', locked, 'temOverlay:', temOverlay, 'jaEntrou:', jaEntrou);
+  }, [locked, temOverlay, jaEntrou]);
 
   // Konami code (↑↑↓↓←→←→BA) → rave mode 10s
   const rave = useRave((s) => s.ativo);
@@ -236,7 +241,7 @@ export default function Feira() {
       {/* Gate de boas-vindas — fullscreen, só na PRIMEIRA entrada da sessão. */}
       {!locked && !temOverlay && !jaEntrou && (
         <div
-          onClick={() => travarPlayer()}
+          onClick={() => { console.log('[PLOCK] gate clicado'); travarPlayer(); }}
           className="absolute inset-0 z-20 flex items-center justify-center bg-bg-deep/70 backdrop-blur-sm cursor-pointer"
         >
           <div className="text-center px-8 py-6 border border-neon-cyan/30 rounded-xl bg-bg-panel/70 shadow-[0_0_40px_rgba(0,212,255,0.25)]">
@@ -254,7 +259,7 @@ export default function Feira() {
         <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-20 pointer-events-auto">
           <button
             type="button"
-            onClick={() => travarPlayer()}
+            onClick={() => { console.log('[PLOCK] pill clicado'); travarPlayer(); }}
             className="group inline-flex items-center gap-2 px-4 py-2 rounded-full border border-neon-cyan/40 bg-bg-panel/80 backdrop-blur text-text-bright hover:border-neon-cyan hover:shadow-[0_0_20px_rgba(0,212,255,0.4)] transition"
           >
             <MousePointerClick className="w-4 h-4 text-neon-cyan group-hover:scale-110 transition-transform" />

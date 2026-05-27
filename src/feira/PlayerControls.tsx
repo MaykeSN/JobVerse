@@ -26,12 +26,25 @@ interface ControlsHandle {
 let handle: ControlsHandle | null = null;
 
 export function travarPlayer() {
-  handle?.lock();
+  console.log('[PLOCK] travarPlayer chamado. handle existe?', !!handle, 'pointerLockElement?', !!document.pointerLockElement);
+  if (handle) {
+    handle.lock();
+    console.log('[PLOCK] handle.lock() chamado');
+  } else {
+    console.warn('[PLOCK] handle NULL — fallback requestPointerLock direto');
+    document.body.requestPointerLock();
+  }
 }
 
 export function destravarPlayer() {
-  if (handle) handle.unlock();
-  else if (document.pointerLockElement) document.exitPointerLock();
+  console.log('[PLOCK] destravarPlayer chamado. handle existe?', !!handle, 'pointerLockElement?', !!document.pointerLockElement);
+  if (handle) {
+    handle.unlock();
+    console.log('[PLOCK] handle.unlock() chamado');
+  } else if (document.pointerLockElement) {
+    document.exitPointerLock();
+    console.log('[PLOCK] exitPointerLock direto');
+  }
 }
 
 const KEY_MAP = [
@@ -117,8 +130,8 @@ export default function PlayerControls({ onLockChange }: PlayerControlsProps) {
       <PointerLockControls
         makeDefault
         selector="#__jobverse_no_auto_lock"
-        onLock={() => onLockChange?.(true)}
-        onUnlock={() => onLockChange?.(false)}
+        onLock={() => { console.log('[PLOCK] drei onLock event'); onLockChange?.(true); }}
+        onUnlock={() => { console.log('[PLOCK] drei onUnlock event'); onLockChange?.(false); }}
       />
     </KeyboardControls>
   );
@@ -131,10 +144,15 @@ export default function PlayerControls({ onLockChange }: PlayerControlsProps) {
 function ConectarHandle() {
   const controls = useThree((s) => s.controls) as unknown as ControlsHandle | null;
   useEffect(() => {
+    console.log('[PLOCK] ConectarHandle effect — controls?', controls, 'tem lock?', controls && typeof (controls as ControlsHandle).lock === 'function');
     if (controls && typeof controls.lock === 'function' && typeof controls.unlock === 'function') {
       handle = controls;
+      console.log('[PLOCK] handle REGISTRADO no singleton');
+    } else {
+      console.warn('[PLOCK] controls sem lock/unlock — handle nao registrado');
     }
     return () => {
+      console.log('[PLOCK] handle removido do singleton');
       handle = null;
     };
   }, [controls]);
@@ -149,7 +167,11 @@ function ConectarHandle() {
 export function usePointerLockState() {
   const [locked, setLocked] = useState(false);
   useEffect(() => {
-    const handler = () => setLocked(document.pointerLockElement !== null);
+    const handler = () => {
+      const novo = document.pointerLockElement !== null;
+      console.log('[PLOCK] pointerlockchange event — locked agora:', novo);
+      setLocked(novo);
+    };
     document.addEventListener('pointerlockchange', handler);
     return () => document.removeEventListener('pointerlockchange', handler);
   }, []);
