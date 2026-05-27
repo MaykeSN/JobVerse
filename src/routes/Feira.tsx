@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useRef } from 'react';
+import { Suspense, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Canvas } from '@react-three/fiber';
 import { Line, MeshReflectorMaterial, Sparkles, Environment } from '@react-three/drei';
@@ -146,35 +146,25 @@ export default function Feira() {
 
   // Modal abriu → libera pointer lock. Modal fechou → re-trava após exit-animation
   // (pra eliminar o "delay de voltar a controlar" que o usuário sentia).
-  const overlayAnteriorRef = useRef(temOverlay);
+  // Quando um modal abre, libera o pointer lock pra não conflitar com mouse no DOM.
+  // O re-lock NÃO é feito aqui — o browser bloqueia requestPointerLock() chamado
+  // fora de um handler de user gesture (setTimeout perde o contexto). O re-lock
+  // acontece síncrono dentro do onClick do botão de fechar modal (handleFecharComLock).
   useEffect(() => {
-    const era = overlayAnteriorRef.current;
-    overlayAnteriorRef.current = temOverlay;
-    console.log('[PLOCK] useEffect overlay — era:', era, 'agora:', temOverlay, 'jaEntrou:', jaEntrou, 'pointerLockEl:', !!document.pointerLockElement);
-
     if (temOverlay && document.pointerLockElement) {
-      console.log('[PLOCK] overlay abriu — destravar');
       destravarPlayer();
-      return;
     }
+  }, [temOverlay]);
 
-    if (era && !temOverlay && jaEntrou && !document.pointerLockElement) {
-      console.log('[PLOCK] overlay fechou — agendar re-lock em 180ms');
-      const t = window.setTimeout(() => {
-        const ui = useUI.getState();
-        const ainda =
-          ui.empresaAberta !== null ||
-          ui.vagaSelecionada !== null ||
-          ui.authModal !== false ||
-          ui.minhasCandidaturasAberto;
-        console.log('[PLOCK] timeout disparou — algum overlay ainda?', ainda);
-        if (!ainda && !document.pointerLockElement) {
-          travarPlayer();
-        }
-      }, 180);
-      return () => window.clearTimeout(t);
-    }
-  }, [temOverlay, jaEntrou]);
+  /**
+   * Wrapper que fecha um overlay E re-trava o cursor no MESMO event tick,
+   * preservando o user-activation gesture pro browser autorizar o
+   * requestPointerLock. Usado nos `onFechar` dos modais.
+   */
+  const fecharComLock = (fn: () => void) => () => {
+    fn();
+    if (jaEntrou) travarPlayer();
+  };
 
   // Marca que o usuário já entrou ao menos uma vez (gate fullscreen só na 1ª)
   useEffect(() => {
@@ -317,9 +307,11 @@ export default function Feira() {
         )}
       </Canvas>
 
-      {/* Overlays HTML — modais + toast + rave + loading */}
-      <ModalVagas empresa={empresaAberta} onFechar={fecharEmpresa} />
-      <ModalCV vaga={vagaSelecionada} empresa={empresaAberta} onFechar={fecharCV} />
+      {/* Overlays HTML — modais + toast + rave + loading.
+          fecharComLock re-trava o cursor no MESMO tick do click → preserva
+          user gesture pro browser autorizar requestPointerLock. */}
+      <ModalVagas empresa={empresaAberta} onFechar={fecharComLock(fecharEmpresa)} />
+      <ModalCV vaga={vagaSelecionada} empresa={empresaAberta} onFechar={fecharComLock(fecharCV)} />
       <MinhasCandidaturasModal />
       <Toast />
       <RaveOverlay />
