@@ -76,6 +76,40 @@ Esperado: `irede 3`, `nimbus 2`, `kindred 2`, `pixelforge 2`, `greenledger 3`.
 
 ---
 
+## 4.1 Aplicar `users.sql` (autenticação)
+
+Esse script adiciona a tabela `users` (login dev/recrutador) e a coluna
+`candidates.user_id`. Sem ele, o modal de auth do JobVerse mostra um erro
+amigável e o app cai pra "modo demo" sem login.
+
+1. **SQL Editor → + New query**.
+2. Copie o conteúdo de `supabase/users.sql` e cole.
+3. **Run**.
+4. Confira em **Table Editor** que a tabela `users` apareceu e que `candidates`
+   ganhou a coluna `user_id`.
+
+```sql
+-- Validação rápida (cole no SQL Editor):
+select column_name, data_type
+from information_schema.columns
+where table_name = 'users';
+
+select column_name, data_type
+from information_schema.columns
+where table_name = 'candidates' and column_name = 'user_id';
+```
+
+> Importante: rode este script **depois** do `seed.sql`, já que a FK
+> `users.empresa_slug` referencia `companies(slug)` — sem as 5 empresas seedadas
+> o cadastro de recrutador falha.
+
+> Por que não Supabase Auth? Decisão deliberada no MVP do hackathon: o auth
+> nativo exige confirmação por email e fluxos extras que complicam a demo.
+> Usamos PBKDF2 client-side via Web Crypto + tabela própria. Em produção,
+> migrar pra `auth.users` + RLS (`-- TODO produção` no topo do `users.sql`).
+
+---
+
 ## 5. Confirmar Realtime
 
 O schema já roda `alter publication supabase_realtime add table applications;` e o

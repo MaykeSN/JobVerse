@@ -503,11 +503,30 @@ Cada empresa precisa:
 - [ ] Teste cross-browser (Chrome, Firefox, Edge) *(manual)*
 - [ ] FPS check (alvo: 60fps em laptop médio) *(manual)*
 
+### Fase 8 — Autenticação simples (adicionada pós-MVP)
+- [x] Schema `supabase/users.sql` — tabela `users` (github, hash, salt, tipo, empresa_slug) + `candidates.user_id`
+- [x] `src/shared/hash.ts` — PBKDF2 SHA-256 100k iters via Web Crypto (sem dep externa)
+- [x] `src/shared/auth.ts` — store zustand `useAuth`, persistência seletiva (sem hash/salt no localStorage), mensagens PT-BR
+- [x] `src/components/AuthModal.tsx` — tabs Entrar/Cadastrar, radio dev/recrutador, dropdown empresa colorido
+- [x] `src/components/MinhasCandidaturasModal.tsx` — atalho `M` lista candidaturas do dev (DB + fallback local)
+- [x] `src/shared/candidato.ts` — adicionado `userId`, plugado em registrarCandidatura
+- [x] `src/routes/Landing.tsx` — refatorada com 2 botões grandes "Sou dev" / "Sou recrutador", card de usuário logado
+- [x] `src/routes/Feira.tsx` — listener tecla M (só dev) + guard de rota
+- [x] `src/routes/Recrutador.tsx` — guard de acesso por `empresa_slug` + badge "modo demo" pra anônimo
+- [x] `docs/setup-supabase.md` — passo 4.1 aplicar users.sql
+- [ ] Aplicar `supabase/users.sql` no SQL Editor *(manual)*
+- [ ] RLS de produção (users vê só próprio registro; recrutador vê só applications da empresa) *(roadmap)*
+
 ### Fase 7 — Entrega
-- [ ] README completo (pitch, stack, como rodar, screenshots, declaração IA, créditos, roadmap)
-- [ ] `docs/declaracao-ia.md` listando Claude + outras ferramentas IA
-- [ ] Slides PDF (8–10 slides, mesma paleta do produto)
-- [ ] Vídeo-pitch 5min no YouTube (não listado)
+- [x] README completo (pitch, stack, como rodar, declaração IA, créditos, roadmap, encaixe nos critérios)
+- [x] `docs/declaracao-ia.md` listando Claude + tabela de uso por área
+- [x] `docs/roteiro-pitch.md` — roteiro 5min estruturado em 5 blocos
+- [x] `docs/slides-outline.md` — 10 slides em markdown com paleta e layout
+- [x] `vercel.json` — config de SPA + cache headers
+- [ ] Exportar slides em PDF (manual — usar outline em Canva/Figma/Google Slides)
+- [ ] Gravar vídeo-pitch 5min no YouTube não listado (manual — seguir roteiro)
+- [ ] Tirar screenshots/GIFs e colocar no README (manual)
+- [ ] Deploy Vercel (manual — conectar repo + adicionar env vars)
 - [ ] Link de produção testado + funcionando
 - [ ] Submissão no formulário oficial iRede
 

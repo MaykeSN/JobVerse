@@ -1,13 +1,24 @@
-import { Link } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowRight, Briefcase, ArrowLeft } from 'lucide-react';
+import { ArrowRight, Briefcase, ArrowLeft, Eye } from 'lucide-react';
 import { useEmpresas } from '../shared/db';
+import { useAuth } from '../shared/auth';
 import ParticulasBg from '../shared/ParticulasBg';
 import SeletorQualidade from '../components/SeletorQualidade';
 
 export default function RecrutadorIndex() {
+  const navigate = useNavigate();
+  const usuario = useAuth((s) => s.usuario);
   // `useEmpresas` já tem fallback pro mock quando sem Supabase ou enquanto carrega.
   const { dados: empresas } = useEmpresas();
+
+  // Recrutador logado vai direto pro próprio painel.
+  useEffect(() => {
+    if (usuario?.tipo === 'recrutador' && usuario.empresaSlug) {
+      navigate(`/recrutador/${usuario.empresaSlug}`, { replace: true });
+    }
+  }, [usuario, navigate]);
   return (
     <div className="relative min-h-screen bg-bg-deep overflow-hidden">
       <ParticulasBg densidade="baixa" />
@@ -36,10 +47,21 @@ export default function RecrutadorIndex() {
           <h1 className="font-display text-4xl md:text-5xl font-bold mb-3 text-glow-magenta">
             Qual empresa você representa?
           </h1>
-          <p className="text-text-dim mb-10 max-w-xl">
+          <p className="text-text-dim mb-6 max-w-xl">
             Selecione o estande pra ver os CVs recebidos, engajamento no
             ambiente 3D e (em breve) análise de match por IA.
           </p>
+
+          <div className="inline-flex items-center gap-2 px-3 py-2 mb-8 rounded-full border border-neon-magenta/25 bg-neon-magenta/5 backdrop-blur text-[11px] uppercase tracking-[0.2em]">
+            <Eye className="w-3.5 h-3.5 text-neon-magenta" />
+            <span className="text-text-dim normal-case tracking-normal">
+              Esta visualização é pública. Pra ter painel próprio,{' '}
+              <Link to="/" className="text-neon-magenta underline-offset-2 hover:underline">
+                cadastre-se na landing
+              </Link>
+              .
+            </span>
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {empresas.map((empresa, i) => (

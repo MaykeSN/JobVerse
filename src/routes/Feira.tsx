@@ -1,9 +1,10 @@
 import { Suspense, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Canvas } from '@react-three/fiber';
 import { Line, MeshReflectorMaterial, Sparkles, Environment } from '@react-three/drei';
 import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing';
 import { useCandidato } from '../shared/candidato';
+import { useAuth } from '../shared/auth';
 import { usePreset } from '../shared/graficos';
 import { useUI, useTemOverlayAberto } from '../shared/ui';
 import { useRave, useKonami } from '../shared/easter-eggs';
@@ -19,6 +20,7 @@ import PlayerControls, { usePointerLockState } from '../feira/PlayerControls';
 import SeletorQualidade from '../components/SeletorQualidade';
 import ModalVagas from '../components/ModalVagas';
 import ModalCV from '../components/ModalCV';
+import MinhasCandidaturasModal from '../components/MinhasCandidaturasModal';
 import Toast from '../components/Toast';
 
 function Piso() {
@@ -84,9 +86,11 @@ function PracaCentral() {
 }
 
 export default function Feira() {
+  const navigate = useNavigate();
   const nome = useCandidato((s) => s.nome);
   const visitadas = useCandidato((s) => s.visitadas);
   const candidaturas = useCandidato((s) => s.candidaturas);
+  const usuario = useAuth((s) => s.usuario);
   const locked = usePointerLockState();
   const preset = usePreset();
 
@@ -96,7 +100,42 @@ export default function Feira() {
   const fecharCV = useUI((s) => s.fecharCV);
   const jaEntrou = useUI((s) => s.jaEntrou);
   const marcarEntrou = useUI((s) => s.marcarEntrou);
+  const abrirMinhasCandidaturas = useUI((s) => s.abrirMinhasCandidaturas);
   const temOverlay = useTemOverlayAberto();
+
+  // Guard de rota — recrutador logado vai direto pro próprio painel; nome
+  // local (`nome`) também conta como "sessão dev anônima" e tem acesso.
+  useEffect(() => {
+    if (usuario?.tipo === 'recrutador') {
+      if (usuario.empresaSlug) {
+        navigate(`/recrutador/${usuario.empresaSlug}`);
+      } else {
+        navigate('/recrutador');
+      }
+      return;
+    }
+    // Não logado E sem candidato local → volta pra landing
+    if (!usuario && !nome) {
+      navigate('/');
+    }
+  }, [usuario, nome, navigate]);
+
+  // Atalho M — só pra dev logado, sem overlay aberto
+  useEffect(() => {
+    if (!usuario || usuario.tipo !== 'dev') return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key.toLowerCase() !== 'm') return;
+      if (temOverlay) return;
+      // Evita conflito quando o usuário está digitando em algum input
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return;
+      e.preventDefault();
+      if (document.pointerLockElement) document.exitPointerLock();
+      abrirMinhasCandidaturas();
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [usuario, temOverlay, abrirMinhasCandidaturas]);
 
   // Quando um modal abre, libera o pointer lock pra não conflitar com o mouse no DOM
   useEffect(() => {
@@ -156,6 +195,12 @@ export default function Feira() {
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
         <p className="text-[10px] uppercase tracking-[0.3em] text-text-muted">
           WASD + mouse · Shift pra correr · Clique num estande pra ver vagas · ESC pra sair
+          {usuario?.tipo === 'dev' && (
+            <>
+              {' · '}
+              <span className="text-neon-cyan">M</span> pra minhas candidaturas
+            </>
+          )}
         </p>
       </div>
 
@@ -252,6 +297,7 @@ export default function Feira() {
       {/* Overlays HTML — modais + toast + rave + loading */}
       <ModalVagas empresa={empresaAberta} onFechar={fecharEmpresa} />
       <ModalCV vaga={vagaSelecionada} empresa={empresaAberta} onFechar={fecharCV} />
+      <MinhasCandidaturasModal />
       <Toast />
       <RaveOverlay />
       <LoadingScreen />

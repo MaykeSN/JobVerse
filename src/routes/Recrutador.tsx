@@ -1,8 +1,9 @@
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, ShieldAlert, Eye, ArrowRight } from 'lucide-react';
 import { empresaPorSlug } from '../feira/empresas';
 import { useEmpresas } from '../shared/db';
+import { useAuth } from '../shared/auth';
 import ParticulasBg from '../shared/ParticulasBg';
 import ListaCVs from '../recrutador/ListaCVs';
 import Heatmap from '../recrutador/Heatmap';
@@ -11,6 +12,9 @@ import IndicadorAoVivo from '../recrutador/IndicadorAoVivo';
 
 export default function Recrutador() {
   const { slug } = useParams<{ slug: string }>();
+  const navigate = useNavigate();
+  const usuario = useAuth((s) => s.usuario);
+
   // Tenta primeiro pela lista vinda do DB; se não chegou ainda, cai no mock.
   const { dados: empresasDb } = useEmpresas();
   const empresaDb = slug ? empresasDb.find((e) => e.slug === slug) : undefined;
@@ -27,6 +31,55 @@ export default function Recrutador() {
     );
   }
 
+  // Recrutador logado tentando ver empresa que NÃO é a dele → bloqueia.
+  const recrutadorSemAcesso =
+    usuario?.tipo === 'recrutador' && usuario.empresaSlug && usuario.empresaSlug !== slug;
+
+  if (recrutadorSemAcesso && usuario) {
+    return (
+      <div className="relative min-h-screen bg-bg-deep overflow-hidden">
+        <ParticulasBg densidade="baixa" />
+        <div className="relative z-10 min-h-screen flex items-center justify-center p-6">
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="max-w-md w-full text-center px-8 py-10 rounded-2xl border border-neon-magenta/40 bg-bg-panel/80 backdrop-blur shadow-[0_0_40px_rgba(255,75,145,0.3)]"
+          >
+            <ShieldAlert className="w-10 h-10 text-neon-magenta mx-auto mb-4" />
+            <h2 className="font-display text-2xl text-glow-magenta mb-2">
+              Acesso restrito
+            </h2>
+            <p className="text-sm text-text-dim mb-6 leading-relaxed">
+              Você está logado como recrutador da{' '}
+              <span className="text-text-bright">{usuario.empresaSlug}</span> e não tem
+              permissão pra ver o painel da{' '}
+              <span style={{ color: empresa.cor }}>{empresa.nome}</span>.
+            </p>
+            <button
+              type="button"
+              onClick={() => navigate(`/recrutador/${usuario.empresaSlug}`)}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-neon-magenta text-bg-deep font-display text-sm tracking-[0.15em] uppercase font-bold shadow-[0_0_22px_rgba(255,75,145,0.5)] hover:scale-[1.02] transition"
+            >
+              Ir pro meu painel
+              <ArrowRight className="w-4 h-4" />
+            </button>
+            <div className="mt-4">
+              <Link
+                to="/"
+                className="text-[11px] uppercase tracking-[0.25em] text-text-dim hover:text-neon-cyan transition"
+              >
+                ← Voltar pra landing
+              </Link>
+            </div>
+          </motion.div>
+        </div>
+      </div>
+    );
+  }
+
+  // Estado "demo público" — sem login OU dev espiando
+  const modoDemo = !usuario || usuario.tipo !== 'recrutador';
+
   return (
     <div className="relative min-h-screen bg-bg-deep overflow-hidden">
       {/* Background sutil de partículas */}
@@ -40,6 +93,20 @@ export default function Recrutador() {
           <ArrowLeft className="w-3 h-3" />
           Voltar
         </Link>
+
+        {modoDemo && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6 max-w-6xl mx-auto inline-flex items-center gap-2 px-3 py-2 rounded-full border border-neon-magenta/30 bg-neon-magenta/5 backdrop-blur text-[11px] uppercase tracking-[0.2em]"
+          >
+            <Eye className="w-3.5 h-3.5 text-neon-magenta" />
+            <span className="text-neon-magenta">Modo demo</span>
+            <span className="text-text-dim normal-case tracking-normal">
+              · faça login pra acessar como recrutador
+            </span>
+          </motion.div>
+        )}
 
         <motion.div
           initial={{ opacity: 0, y: 16 }}

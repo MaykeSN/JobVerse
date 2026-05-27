@@ -16,12 +16,14 @@ interface CandidatoState {
   id: string | null;
   nome: string;
   email?: string;
+  /** Liga este candidate ao users.id (dev logado). Null se for visitante anônimo. */
+  userId: string | null;
   skills: string[];
   sobre: string;
   github: string;
   visitadas: string[];
   candidaturas: string[];
-  definir: (dados: { nome: string; email?: string }) => void;
+  definir: (dados: { nome: string; email?: string; userId?: string | null }) => void;
   salvarCV: (dados: DadosCV) => void;
   registrarVisita: (slug: string, dwellSeconds?: number) => void;
   registrarCandidatura: (jobId: string) => void;
@@ -36,6 +38,8 @@ interface PerfilCandidatoLocal {
   id: string;
   nome: string;
   email?: string;
+  /** users.id quando dev logado; null pra visitante anônimo. */
+  userId: string | null;
   skills: string[];
   sobre: string;
   github: string;
@@ -44,20 +48,37 @@ interface PerfilCandidatoLocal {
 async function upsertCandidato(perfil: PerfilCandidatoLocal): Promise<boolean> {
   if (!supabase) return false;
   try {
+    const payload: Record<string, unknown> = {
+      id: perfil.id,
+      nome: perfil.nome || 'Visitante',
+      email: perfil.email ?? null,
+      skills: perfil.skills.length ? perfil.skills : null,
+      sobre: perfil.sobre || null,
+      github: perfil.github || null
+    };
+    // Só inclui user_id quando temos; assim não quebra se users.sql ainda não foi
+    // aplicado (a coluna não existe e o Supabase rejeitaria a chave desconhecida).
+    if (perfil.userId) payload.user_id = perfil.userId;
+
     const { error } = await supabase
       .from('candidates')
-      .upsert(
-        {
-          id: perfil.id,
-          nome: perfil.nome || 'Visitante',
-          email: perfil.email ?? null,
-          skills: perfil.skills.length ? perfil.skills : null,
-          sobre: perfil.sobre || null,
-          github: perfil.github || null
-        },
-        { onConflict: 'id' }
-      );
+      .upsert(payload, { onConflict: 'id' });
     if (error) {
+      // 42703 = coluna inexistente (user_id) — degrada sem user_id e tenta de novo.
+      if (error.code === '42703' && perfil.userId) {
+        console.warn(
+          '[candidato.upsertCandidato] users.sql não aplicado; salvando sem user_id.'
+        );
+        delete payload.user_id;
+        const retry = await supabase
+          .from('candidates')
+          .upsert(payload, { onConflict: 'id' });
+        if (retry.error) {
+          console.error('[candidato.upsertCandidato] retry falhou:', retry.error.message);
+          return false;
+        }
+        return true;
+      }
       console.error('[candidato.upsertCandidato] falha:', error.message);
       return false;
     }
@@ -128,17 +149,20 @@ export const useCandidato = create<CandidatoState>()(
       id: null,
       nome: '',
       email: undefined,
+      userId: null,
       skills: [],
       sobre: '',
       github: '',
       visitadas: [],
       candidaturas: [],
-      definir: ({ nome, email }) => {
+      definir: ({ nome, email, userId }) => {
         const novoId = crypto.randomUUID();
+        const userIdResolvido = userId ?? null;
         set({
           id: novoId,
           nome,
           email,
+          userId: userIdResolvido,
           // Preserva CV anterior caso o usuário só tenha mudado o nome.
           visitadas: [],
           candidaturas: []
@@ -149,6 +173,7 @@ export const useCandidato = create<CandidatoState>()(
           id: novoId,
           nome,
           email,
+          userId: userIdResolvido,
           skills: [],
           sobre: '',
           github: ''
@@ -162,6 +187,7 @@ export const useCandidato = create<CandidatoState>()(
             id: state.id,
             nome: state.nome,
             email: state.email,
+            userId: state.userId,
             skills,
             sobre,
             github
@@ -186,6 +212,7 @@ export const useCandidato = create<CandidatoState>()(
               id: state.id!,
               nome: state.nome,
               email: state.email,
+              userId: state.userId,
               skills: state.skills,
               sobre: state.sobre,
               github: state.github
@@ -218,6 +245,7 @@ export const useCandidato = create<CandidatoState>()(
               id: state.id!,
               nome: state.nome,
               email: state.email,
+              userId: state.userId,
               skills: state.skills,
               sobre: state.sobre,
               github: state.github
@@ -235,6 +263,7 @@ export const useCandidato = create<CandidatoState>()(
           id: null,
           nome: '',
           email: undefined,
+          userId: null,
           skills: [],
           sobre: '',
           github: '',
