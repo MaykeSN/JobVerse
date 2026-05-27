@@ -174,11 +174,6 @@ export default function Feira() {
     if (locked && !jaEntrou) marcarEntrou();
   }, [locked, jaEntrou, marcarEntrou]);
 
-  const retravarCursor = () => {
-    // PointerLockControls do drei lockam o body por default
-    document.body.requestPointerLock();
-  };
-
   // Konami code (↑↑↓↓←→←→BA) → rave mode 10s
   const rave = useRave((s) => s.ativo);
   const ativarRave = useRave((s) => s.ativar);
@@ -231,10 +226,12 @@ export default function Feira() {
         </div>
       )}
 
-      {/* Gate de boas-vindas — fullscreen, só na PRIMEIRA entrada da sessão */}
+      {/* Gate de boas-vindas — fullscreen, só na PRIMEIRA entrada da sessão.
+          O `data-jobverse-lock` faz o PointerLockControls travar o cursor
+          ao clicar (em vez de travar a qualquer click no canvas). */}
       {!locked && !temOverlay && !jaEntrou && (
         <div
-          onClick={retravarCursor}
+          data-jobverse-lock
           className="absolute inset-0 z-20 flex items-center justify-center bg-bg-deep/70 backdrop-blur-sm cursor-pointer"
         >
           <div className="text-center px-8 py-6 border border-neon-cyan/30 rounded-xl bg-bg-panel/70 shadow-[0_0_40px_rgba(0,212,255,0.25)]">
@@ -247,12 +244,12 @@ export default function Feira() {
         </div>
       )}
 
-      {/* Cursor livre depois da 1ª entrada — pill discreto, NÃO bloqueia a cena */}
+      {/* Cursor livre depois da 1ª entrada — pill discreto pra retomar */}
       {!locked && !temOverlay && jaEntrou && (
         <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-20 pointer-events-auto">
           <button
             type="button"
-            onClick={retravarCursor}
+            data-jobverse-lock
             className="group inline-flex items-center gap-2 px-4 py-2 rounded-full border border-neon-cyan/40 bg-bg-panel/80 backdrop-blur text-text-bright hover:border-neon-cyan hover:shadow-[0_0_20px_rgba(0,212,255,0.4)] transition"
           >
             <MousePointerClick className="w-4 h-4 text-neon-cyan group-hover:scale-110 transition-transform" />

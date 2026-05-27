@@ -38,6 +38,10 @@ function Mover() {
       camera.position.y = PLAYER_HEIGHT;
     }
 
+    // Não move sem pointer lock — evita câmera andar sozinha quando o user
+    // tá interagindo com UI (seletor de qualidade, audio, modais).
+    if (!document.pointerLockElement) return;
+
     const { forward, back, left, right, run } = get();
     if (!forward && !back && !left && !right) return;
 
@@ -74,7 +78,14 @@ export default function PlayerControls({ onLockChange }: PlayerControlsProps) {
   return (
     <KeyboardControls map={map}>
       <Mover />
+      {/*
+        selector restringe o auto-lock a elementos com [data-jobverse-lock].
+        Sem isso, click em qualquer lugar do canvas (incluindo "vazamentos"
+        de UI sobreposta) ativava lock indesejado. Agora só o gate inicial
+        e o pill "Voltar pra feira" travam o cursor.
+      */}
       <PointerLockControls
+        selector="[data-jobverse-lock]"
         onLock={() => onLockChange?.(true)}
         onUnlock={() => onLockChange?.(false)}
       />
