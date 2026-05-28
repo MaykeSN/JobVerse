@@ -6,6 +6,9 @@ Projeto do **HackWeb 2026 · Desafio 4 (ExpoVerse / Metaverso)** · iRede Tecnol
 
 [![Stack](https://img.shields.io/badge/stack-Vite_+_React_+_R3F_+_Supabase-00D4FF?style=flat-square)](#stack)
 [![Status](https://img.shields.io/badge/status-MVP_funcional-00C896?style=flat-square)](#)
+[![Deploy](https://img.shields.io/badge/deploy-Vercel-black?style=flat-square&logo=vercel)](https://job-verse-tau.vercel.app)
+
+🌐 **Produção:** https://job-verse-tau.vercel.app
 
 ---
 
@@ -25,12 +28,12 @@ Combina dois mundos: a presença física de uma feira de empregos com a escala e
 
 | Tela | Foto |
 |---|---|
-| **Landing** — partículas conectadas, glitch no logo | _(adicionar screenshot quando publicar)_ |
-| **Feira 3D** — 5 estandes em pentágono, FPS, Tron lines | _(adicionar screenshot)_ |
-| **Dashboard recrutador** — CVs realtime + Heatmap | _(adicionar screenshot)_ |
-| **Rave mode** (Konami code) | _(adicionar GIF)_ |
+| **Landing** — partículas conectadas, glitch no logo | https://job-verse-tau.vercel.app |
+| **Feira 3D** — 5 estandes em pentágono, FPS, Tron lines | https://job-verse-tau.vercel.app/feira |
+| **Dashboard recrutador** — CVs realtime + Heatmap | https://job-verse-tau.vercel.app/recrutador/irede |
+| **Rave mode** (Konami code) | ↑ ↑ ↓ ↓ ← → ← → B A na feira |
 
-🎥 **Vídeo-pitch:** _(link YouTube não-listado quando gravado)_
+🎥 **Vídeo-pitch:** _(link YouTube não-listado — em breve)_
 
 ---
 
@@ -107,7 +110,7 @@ cp .env.example .env
 npm run dev
 ```
 
-Acesse [http://localhost:5173](http://localhost:5173).
+Acesse [http://localhost:5173](http://localhost:5173) ou o deploy em [https://job-verse-tau.vercel.app](https://job-verse-tau.vercel.app).
 
 **Sem `.env` configurado**, o app ainda funciona com mocks locais (graceful degradation): landing, cena 3D, modal de vagas, dashboard recrutador — tudo navegável. Só candidatura/realtime entre browsers diferentes não persiste.
 

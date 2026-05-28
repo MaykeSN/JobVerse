@@ -187,8 +187,8 @@ HOJE (MVP)         PRÓXIMO          MÉDIO PRAZO
         ────────────────────────
 
   📦 github.com/MaykeSN/JobVerse
-  🎥 youtube.com/...           (link do pitch)
-  🌐 jobverse.vercel.app       (link de produção)
+  🎥 youtube.com/...                  (link do pitch — em breve)
+  🌐 job-verse-tau.vercel.app         (produção no ar ✅)
 
         ────────────────────────
 

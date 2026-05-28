@@ -125,6 +125,8 @@
 
 > "Esse é o JobVerse — projeto do time [NOMES] pro HackWeb 2026, desafio ExpoVerse.
 >
+> Acesse agora em job-verse-tau.vercel.app — sem cadastro, sem download.
+>
 > Código aberto em github.com/MaykeSN/JobVerse.
 >
 > Obrigado iRede pela oportunidade. Vamos transformar como devs e empresas se conhecem."
@@ -136,7 +138,7 @@
 ## Checklist pré-gravação
 
 - [ ] Repo público em `main`, último commit estável
-- [ ] Deploy Vercel funcionando, link testado
+- [x] Deploy Vercel funcionando → https://job-verse-tau.vercel.app
 - [ ] `.env` configurado, schema + seed aplicados no Supabase
 - [ ] OBS ou Loom instalado, microfone testado
 - [ ] Aba do navegador SEM extensões/notificações
