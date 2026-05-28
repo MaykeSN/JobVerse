@@ -65,9 +65,10 @@ function WASDCluster() {
 
 interface Props {
   mostrarM?: boolean;
+  mostrarB?: boolean;
 }
 
-export default function ControlesHUD({ mostrarM = false }: Props) {
+export default function ControlesHUD({ mostrarM = false, mostrarB = false }: Props) {
   return (
     <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
       <div className="flex flex-col items-center gap-2 px-5 py-3 rounded-2xl border border-neon-cyan/15 bg-bg-deep/70 backdrop-blur-lg shadow-[0_0_30px_rgba(0,212,255,0.12),inset_0_1px_0_0_rgba(255,255,255,0.05)]">
@@ -87,6 +88,12 @@ export default function ControlesHUD({ mostrarM = false }: Props) {
           <Tecla keys={['V']} label="Áudio" />
           <Divisor />
           <Tecla keys={['L']} label="Sair" />
+          {mostrarB && (
+            <>
+              <Divisor />
+              <Tecla keys={['B']} label="Lobby" variant="mouse" />
+            </>
+          )}
           {mostrarM && (
             <>
               <Divisor />

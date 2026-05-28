@@ -5,9 +5,8 @@ import { Vector3, type Mesh, type MeshBasicMaterial, type MeshStandardMaterial }
 import type { Empresa } from '../shared/tipos';
 import { usePreset } from '../shared/graficos';
 import { useGraficos } from '../shared/graficos';
-import { useUI } from '../shared/ui';
 import { tocarClick } from '../shared/audio';
-import { destravarPlayer } from './PlayerControls';
+import { useLocalizacao } from '../shared/localizacao';
 import DwellTracker from './DwellTracker';
 
 interface EstandeProps {
@@ -21,7 +20,7 @@ export default function Estande({ empresa, contagens }: EstandeProps) {
   const { posicao, cor, nome, missao, stack } = empresa;
   const preset = usePreset();
   const qualidade = useGraficos((s) => s.qualidade);
-  const abrirEmpresa = useUI((s) => s.abrirEmpresa);
+  const irParaSala = useLocalizacao((s) => s.irParaSala);
 
   const [dentro, setDentro] = useState(false);
   const anelRef = useRef<Mesh>(null);
@@ -63,8 +62,8 @@ export default function Estande({ empresa, contagens }: EstandeProps) {
   const handleClick = (e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation();
     tocarClick();
-    destravarPlayer();
-    abrirEmpresa(empresa);
+    // Teleporta pra sala interna — mantém o pointer lock pra andar lá dentro.
+    irParaSala(empresa.slug);
   };
 
   return (

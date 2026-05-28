@@ -12,6 +12,10 @@ import { tocarRave, useAudio } from '../shared/audio';
 import { useGraficos, type Qualidade } from '../shared/graficos';
 import { useToast } from '../shared/toast';
 import { useContagensPorEmpresa } from '../shared/contagens';
+import { useLocalizacao } from '../shared/localizacao';
+import { empresaPorSlug } from '../feira/empresas';
+import Sala from '../feira/Sala';
+import Teletransporte from '../feira/Teletransporte';
 import { MousePointerClick } from 'lucide-react';
 import { useCallback } from 'react';
 import ToggleAudio from '../components/ToggleAudio';
@@ -26,7 +30,6 @@ import PlayerControls, {
   destravarPlayer
 } from '../feira/PlayerControls';
 import SeletorQualidade from '../components/SeletorQualidade';
-import ModalVagas from '../components/ModalVagas';
 import ModalCV from '../components/ModalCV';
 import MinhasCandidaturasModal from '../components/MinhasCandidaturasModal';
 import Toast from '../components/Toast';
@@ -102,10 +105,14 @@ export default function Feira() {
   const locked = usePointerLockState();
   const preset = usePreset();
 
-  const empresaAberta = useUI((s) => s.empresaAberta);
   const vagaSelecionada = useUI((s) => s.vagaSelecionada);
-  const fecharEmpresa = useUI((s) => s.fecharEmpresa);
   const fecharCV = useUI((s) => s.fecharCV);
+  const localizacao = useLocalizacao((s) => s.localizacao);
+  const voltarParaLobby = useLocalizacao((s) => s.voltarParaLobby);
+
+  // Empresa de contexto pro ModalCV: vem da sala atual quando dentro de uma.
+  const empresaContexto =
+    localizacao.tipo === 'sala' ? empresaPorSlug(localizacao.slug) ?? null : null;
   const jaEntrou = useUI((s) => s.jaEntrou);
   const marcarEntrou = useUI((s) => s.marcarEntrou);
   const abrirMinhasCandidaturas = useUI((s) => s.abrirMinhasCandidaturas);
@@ -180,12 +187,15 @@ export default function Feira() {
         e.preventDefault();
         if (document.pointerLockElement) destravarPlayer();
         abrirMinhasCandidaturas();
+      } else if (key === 'b' && localizacao.tipo === 'sala') {
+        e.preventDefault();
+        voltarParaLobby();
       }
     };
 
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [usuario, temOverlay, abrirMinhasCandidaturas, navigate]);
+  }, [usuario, temOverlay, abrirMinhasCandidaturas, navigate, localizacao, voltarParaLobby]);
 
   // Modal abriu → libera pointer lock. Modal fechou → re-trava após exit-animation
   // (pra eliminar o "delay de voltar a controlar" que o usuário sentia).
@@ -252,7 +262,33 @@ export default function Feira() {
       </div>
 
       {/* HUD de controles estilo gamepad — só quando em jogo (lock + sem overlay) */}
-      {locked && !temOverlay && <ControlesHUD mostrarM={usuario?.tipo === 'dev'} />}
+      {locked && !temOverlay && (
+        <ControlesHUD
+          mostrarM={usuario?.tipo === 'dev'}
+          mostrarB={localizacao.tipo === 'sala'}
+        />
+      )}
+
+      {/* Indicador da sala atual (top-center) — só quando dentro de uma empresa */}
+      {locked && !temOverlay && empresaContexto && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
+          <div
+            className="px-4 py-1.5 rounded-full border bg-bg-deep/70 backdrop-blur-lg"
+            style={{
+              borderColor: `${empresaContexto.cor}55`,
+              boxShadow: `0 0 16px ${empresaContexto.cor}33`
+            }}
+          >
+            <p className="text-[10px] uppercase tracking-[0.3em] text-text-dim">Estande</p>
+            <p
+              className="font-display text-sm font-bold leading-tight"
+              style={{ color: empresaContexto.cor, textShadow: `0 0 10px ${empresaContexto.cor}55` }}
+            >
+              {empresaContexto.nome}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Seletor de qualidade gráfica — sempre visível, fora do gate */}
       <SeletorQualidade posicao="bottom-left" />
@@ -307,12 +343,18 @@ export default function Feira() {
         <pointLight position={[0, 6, 0]} color="#00D4FF" intensity={1.5} />
 
         <Suspense fallback={null}>
-          <Piso />
-          <PracaCentral />
-          <LinhasNeon />
-          {empresas.map((e) => (
-            <Estande key={e.slug} empresa={e} contagens={contagens[e.slug]} />
-          ))}
+          {localizacao.tipo === 'feira' ? (
+            <>
+              <Piso />
+              <PracaCentral />
+              <LinhasNeon />
+              {empresas.map((e) => (
+                <Estande key={e.slug} empresa={e} contagens={contagens[e.slug]} />
+              ))}
+            </>
+          ) : (
+            empresaContexto && <Sala empresa={empresaContexto} />
+          )}
           {/* Sparkles ambiente — quantidade depende da qualidade (1.5x no rave) */}
           <Sparkles
             count={sparklesCount}
@@ -326,6 +368,7 @@ export default function Feira() {
         </Suspense>
 
         <PlayerControls />
+        <Teletransporte />
 
         {preset.bloom && (
           <EffectComposer>
@@ -344,11 +387,14 @@ export default function Feira() {
         )}
       </Canvas>
 
-      {/* Overlays HTML — modais + toast + rave + loading.
-          fecharComLock re-trava o cursor no MESMO tick do click → preserva
-          user gesture pro browser autorizar requestPointerLock. */}
-      <ModalVagas empresa={empresaAberta} onFechar={fecharComLock(fecharEmpresa)} />
-      <ModalCV vaga={vagaSelecionada} empresa={empresaAberta} onFechar={fecharComLock(fecharCV)} />
+      {/* Overlays HTML — modal de CV + toast + rave + loading.
+          ModalVagas foi substituído pelas salas internas (Sala.tsx) — agora
+          o usuário clica direto no Quadro da vaga dentro da sala. */}
+      <ModalCV
+        vaga={vagaSelecionada}
+        empresa={empresaContexto}
+        onFechar={fecharComLock(fecharCV)}
+      />
       <MinhasCandidaturasModal />
       <Toast />
       <RaveOverlay />
