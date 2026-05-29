@@ -185,6 +185,7 @@ export default function Sala({ empresa }: SalaProps) {
         <Float speed={1.5} floatIntensity={0.4}>
           <Text
             position={[0, 1.95, 0]}
+            rotation={[0, Math.PI, 0]}
             fontSize={0.16}
             color="#00D4FF"
             anchorX="center"
@@ -192,7 +193,7 @@ export default function Sala({ empresa }: SalaProps) {
             outlineWidth={0.008}
             outlineColor="#00D4FF"
           >
-            ← VOLTAR AO LOBBY
+            VOLTAR AO LOBBY →
           </Text>
         </Float>
         <Sparkles count={18} scale={[1.4, 2.2, 1.4]} position={[0, 1, 0]} color="#00D4FF" size={2.5} speed={0.5} />
