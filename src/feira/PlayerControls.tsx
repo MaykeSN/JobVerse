@@ -6,6 +6,10 @@ import {
   useKeyboardControls
 } from '@react-three/drei';
 import { Vector3 } from 'three';
+import { useLocalizacao } from '../shared/localizacao';
+
+// Metade do TAMANHO_SALA (10) menos margem de 0.4 → player não atravessa parede
+const LIMITE_SALA = 4.6;
 
 type Movement = 'forward' | 'back' | 'left' | 'right' | 'run';
 
@@ -50,6 +54,7 @@ const RUN_MULTIPLIER = 1.8;
 function Mover() {
   const { camera } = useThree();
   const [, get] = useKeyboardControls<Movement>();
+  const localizacao = useLocalizacao((s) => s.localizacao);
 
   // Reused vectors — avoid allocating per-frame
   const forwardVec = useRef(new Vector3());
@@ -89,6 +94,12 @@ function Mover() {
 
     const speed = BASE_SPEED * (run ? RUN_MULTIPLIER : 1) * delta;
     camera.position.addScaledVector(moveVec.current, speed);
+
+    // Colisão com as paredes da sala — clampeia X e Z dentro dos limites
+    if (localizacao.tipo === 'sala') {
+      camera.position.x = Math.max(-LIMITE_SALA, Math.min(LIMITE_SALA, camera.position.x));
+      camera.position.z = Math.max(-LIMITE_SALA, Math.min(LIMITE_SALA, camera.position.z));
+    }
   });
 
   return null;

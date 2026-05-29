@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import { Text } from '@react-three/drei';
-import { useFrame, type ThreeEvent } from '@react-three/fiber';
-import { DoubleSide, type MeshStandardMaterial } from 'three';
+import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
+import { DoubleSide, type MeshBasicMaterial, type MeshStandardMaterial, Vector3, type Group } from 'three';
 import type { Vaga } from '../shared/tipos';
 import { tocarClick } from '../shared/audio';
 import { destravarPlayer } from './PlayerControls';
@@ -27,12 +27,35 @@ const SENIORIDADE_LABEL: Record<string, string> = {
  */
 export default function Quadro({ vaga, posicao, rotacaoY, cor, jaCandidatado }: QuadroProps) {
   const abrirCV = useUI((s) => s.abrirCV);
+  const { camera } = useThree();
   const botaoMat = useRef<MeshStandardMaterial>(null);
+  const bordaMat = useRef<MeshBasicMaterial>(null);
+  const grupoRef = useRef<Group>(null);
+  const worldPos = useRef(new Vector3());
+  const escalaAtual = useRef(1);
 
-  // Pulsing sutil no botão Candidatar (quando ainda não candidatou)
   useFrame(({ clock }) => {
-    if (!botaoMat.current || jaCandidatado) return;
-    botaoMat.current.emissiveIntensity = 0.7 + Math.sin(clock.elapsedTime * 2.4) * 0.3;
+    // Pulso do botão Candidatar
+    if (botaoMat.current && !jaCandidatado) {
+      botaoMat.current.emissiveIntensity = 0.7 + Math.sin(clock.elapsedTime * 2.4) * 0.3;
+    }
+
+    // Proximidade — destaca quadro quando player se aproxima (< 2.5 unidades)
+    if (grupoRef.current) {
+      grupoRef.current.getWorldPosition(worldPos.current);
+      const dist = camera.position.distanceTo(worldPos.current);
+      const proximo = dist < 2.5;
+
+      // Escala suave: 1 → 1.06 quando próximo
+      const alvo = proximo ? 1.06 : 1;
+      escalaAtual.current += (alvo - escalaAtual.current) * 0.08;
+      grupoRef.current.scale.setScalar(escalaAtual.current);
+
+      // Borda mais brilhante quando próximo
+      if (bordaMat.current) {
+        bordaMat.current.opacity = proximo ? 1 : 0.85;
+      }
+    }
   });
 
   const handleCandidatar = (e: ThreeEvent<MouseEvent>) => {
@@ -46,11 +69,11 @@ export default function Quadro({ vaga, posicao, rotacaoY, cor, jaCandidatado }: 
   const requisitosTexto = vaga.requisitos.slice(0, 4).map((r) => `• ${r}`).join('\n');
 
   return (
-    <group position={posicao} rotation={[0, rotacaoY, 0]}>
+    <group ref={grupoRef} position={posicao} rotation={[0, rotacaoY, 0]}>
       {/* Moldura externa — borda emissive na cor da empresa */}
       <mesh position={[0, 0, -0.02]}>
         <planeGeometry args={[2.1, 2.7]} />
-        <meshBasicMaterial color={cor} side={DoubleSide} transparent opacity={0.85} toneMapped={false} />
+        <meshBasicMaterial ref={bordaMat} color={cor} side={DoubleSide} transparent opacity={0.85} toneMapped={false} />
       </mesh>
 
       {/* Painel principal (background do quadro) */}

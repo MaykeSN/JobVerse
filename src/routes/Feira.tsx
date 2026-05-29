@@ -34,6 +34,7 @@ import SeletorQualidade from '../components/SeletorQualidade';
 import ModalCV from '../components/ModalCV';
 import MinhasCandidaturasModal from '../components/MinhasCandidaturasModal';
 import Toast from '../components/Toast';
+import FadeTransicao from '../shared/FadeTransicao';
 
 function Piso() {
   const preset = usePreset();
@@ -415,6 +416,7 @@ export default function Feira() {
       <Toast />
       <RaveOverlay />
       <LoadingScreen />
+      <FadeTransicao />
     </div>
   );
 }
