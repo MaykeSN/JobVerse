@@ -1,7 +1,7 @@
 import { Suspense, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Canvas } from '@react-three/fiber';
-import { Line, MeshReflectorMaterial, Sparkles, Environment } from '@react-three/drei';
+import { Line, MeshReflectorMaterial, Sparkles, Environment, Stars } from '@react-three/drei';
 import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing';
 import { useCandidato } from '../shared/candidato';
 import { useAuth } from '../shared/auth';
@@ -16,6 +16,7 @@ import { useLocalizacao } from '../shared/localizacao';
 import { empresaPorSlug } from '../feira/empresas';
 import Sala from '../feira/Sala';
 import Teletransporte from '../feira/Teletransporte';
+import { NPCDoEstande } from '../feira/NPC';
 import { MousePointerClick } from 'lucide-react';
 import { useCallback } from 'react';
 import ToggleAudio from '../components/ToggleAudio';
@@ -336,13 +337,24 @@ export default function Feira() {
 
       <Canvas shadows camera={{ position: [0, 5, 14], fov: 60 }} gl={{ antialias: true }}>
         <color attach="background" args={['#05060F']} />
-        <fog attach="fog" args={['#05060F', 18, 55]} />
+        <fog attach="fog" args={['#05060F', 22, 90]} />
 
         <ambientLight intensity={0.25} />
         <directionalLight position={[8, 12, 5]} intensity={0.6} castShadow />
         <pointLight position={[0, 6, 0]} color="#00D4FF" intensity={1.5} />
 
         <Suspense fallback={null}>
+          {/* Skybox de estrelas — sempre visível, dá profundidade ao mundo */}
+          <Stars
+            radius={85}
+            depth={40}
+            count={3500}
+            factor={5}
+            saturation={0.4}
+            fade
+            speed={0.3}
+          />
+
           {localizacao.tipo === 'feira' ? (
             <>
               <Piso />
@@ -350,6 +362,10 @@ export default function Feira() {
               <LinhasNeon />
               {empresas.map((e) => (
                 <Estande key={e.slug} empresa={e} contagens={contagens[e.slug]} />
+              ))}
+              {/* Recepcionistas humanóides — vibe feira viva */}
+              {empresas.map((e) => (
+                <NPCDoEstande key={`npc-${e.slug}`} empresa={e} />
               ))}
             </>
           ) : (
