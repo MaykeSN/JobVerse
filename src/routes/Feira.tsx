@@ -35,6 +35,8 @@ import ModalCV from '../components/ModalCV';
 import MinhasCandidaturasModal from '../components/MinhasCandidaturasModal';
 import Toast from '../components/Toast';
 import FadeTransicao from '../shared/FadeTransicao';
+import OutrosJogadores from '../feira/OutrosJogadores';
+import { useMultiplayer } from '../shared/multiplayer';
 
 function Piso() {
   const preset = usePreset();
@@ -120,6 +122,8 @@ export default function Feira() {
   const abrirMinhasCandidaturas = useUI((s) => s.abrirMinhasCandidaturas);
   const temOverlay = useTemOverlayAberto();
   const contagens = useContagensPorEmpresa();
+  const onlineCount = useMultiplayer((s) => Object.keys(s.jogadores).length + 1);
+  const multiConectado = useMultiplayer((s) => s.conectado);
 
   // Guard de rota — recrutador logado vai direto pro próprio painel; nome
   // local (`nome`) também conta como "sessão dev anônima" e tem acesso.
@@ -247,6 +251,14 @@ export default function Feira() {
       </div>
 
       <div className="absolute top-4 right-4 z-10 flex items-center gap-4 text-right">
+        {multiConectado && (
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.3em] text-text-dim">Online</p>
+            <p className="font-display text-lg" style={{ color: '#84CC16' }}>
+              ● {onlineCount}
+            </p>
+          </div>
+        )}
         <div>
           <p className="text-[10px] uppercase tracking-[0.3em] text-text-dim">Visitadas</p>
           <p className="font-display text-lg text-neon-cyan">{visitadas.length} / 5</p>
@@ -386,6 +398,7 @@ export default function Feira() {
 
         <PlayerControls />
         <Teletransporte />
+        <OutrosJogadores />
 
         {preset.bloom && (
           <EffectComposer>

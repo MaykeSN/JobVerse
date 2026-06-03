@@ -7,7 +7,10 @@ import { usePreset } from '../shared/graficos';
 import { useGraficos } from '../shared/graficos';
 import { tocarClick } from '../shared/audio';
 import { useLocalizacao } from '../shared/localizacao';
+import { useMultiplayer } from '../shared/multiplayer';
 import DwellTracker from './DwellTracker';
+
+const LIMITE_SALA = 8;
 
 interface EstandeProps {
   empresa: Empresa;
@@ -23,6 +26,11 @@ export default function Estande({ empresa, contagens }: EstandeProps) {
   const irParaSala = useLocalizacao((s) => s.irParaSala);
 
   const [dentro, setDentro] = useState(false);
+
+  // Conta quantos players estão nesta sala agora (atualiza em tempo real)
+  const lotacao = useMultiplayer((s) =>
+    Object.values(s.jogadores).filter((j) => j.local === `sala:${empresa.slug}`).length
+  );
   const anelRef = useRef<Mesh>(null);
   const orbitalRef = useRef<Mesh>(null);
   const pilarMatRefs = useRef<MeshStandardMaterial[]>([]);
@@ -235,6 +243,16 @@ export default function Estande({ empresa, contagens }: EstandeProps) {
             </span>
             <span className="text-[10px] uppercase tracking-widest text-text-dim ml-1">
               {contagens.candidatos === 1 ? 'candidato' : 'candidatos'}
+            </span>
+            <span className="text-text-dim/40 mx-2">·</span>
+            <span
+              className="font-display text-[11px] font-bold"
+              style={{ color: lotacao >= LIMITE_SALA ? '#EF4444' : '#84CC16' }}
+            >
+              {lotacao}/{LIMITE_SALA}
+            </span>
+            <span className="text-[10px] uppercase tracking-widest text-text-dim ml-1">
+              {lotacao >= LIMITE_SALA ? 'lotado' : 'na sala'}
             </span>
           </div>
         </Html>
