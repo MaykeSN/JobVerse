@@ -16,3 +16,6 @@ vite.config.d.ts
 *.log
 .idea
 .cache
+
+# Build artifacts internos de ferramentas
+artifact-build-manifest.json
