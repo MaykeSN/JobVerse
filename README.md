@@ -212,7 +212,10 @@ Em conformidade com a **regra 12 do edital HackWeb**, ferramentas de IA generati
 
 ## Equipe
 
-_(preencher com integrantes do time)_
+Nicolas Cabral Carvalho
+Mayke de Souza Nogueira
+Yang Feitosa Andrade Barbosa
+Samuel Macena da Silva
 
 ## Licença
 
